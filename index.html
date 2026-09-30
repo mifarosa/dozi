@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dozi</title>
+  <meta name="description" content="İlaç takip uygulaması: kutu, blister ve hap sayısını görsel olarak takip et.">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Dozi">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <button id="back" class="icon-btn" aria-label="Geri" hidden>&#8592;</button>
+    <h1>Do<span>zi</span></h1>
+    <button id="add" class="icon-btn" aria-label="İlaç ekle">+</button>
+  </header>
+
+  <main id="app"></main>
+
+  <dialog id="form-dialog">
+    <form id="med-form" method="dialog">
+      <h2 id="form-title">Yeni ilaç</h2>
+
+      <label>İlaç adı
+        <input name="name" required maxlength="40" placeholder="Örn. Vitamin D">
+      </label>
+
+      <div class="grid2">
+        <label>Kutuda kaç blister?
+          <input name="blisters" type="number" min="1" max="50" value="2" required inputmode="numeric">
+        </label>
+        <label>Blisterde kaç hap?
+          <input name="perBlister" type="number" min="1" max="100" value="14" required inputmode="numeric">
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>Kaldığın yer</legend>
+        <div class="grid2">
+          <label>Kullandığım blister
+            <input name="curBlister" type="number" min="1" value="1" required inputmode="numeric">
+          </label>
+          <label>Kullandığım hap
+            <input name="curPill" type="number" min="1" value="1" required inputmode="numeric">
+          </label>
+        </div>
+        <label>O hapın durumu
+          <select name="curPart">
+            <option value="0">Tam (hiç kullanılmamış)</option>
+            <option value="3">&#190; kaldı</option>
+            <option value="2">Yarısı kaldı</option>
+            <option value="1">&#188; kaldı</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <div class="grid2">
+        <label>Her alışta
+          <select name="dose">
+            <option value="1">&#188; hap</option>
+            <option value="2">Yarım hap</option>
+            <option value="4" selected>1 hap</option>
+            <option value="6">1,5 hap</option>
+            <option value="8">2 hap</option>
+          </select>
+        </label>
+        <label>Günde kaç kez?
+          <input name="perDay" type="number" min="1" max="12" value="1" required inputmode="numeric">
+        </label>
+      </div>
+
+      <p id="form-error" class="error" hidden></p>
+
+      <div class="actions">
+        <button type="button" id="form-cancel" class="btn ghost">Vazgeç</button>
+        <button type="submit" class="btn primary">Kaydet</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
