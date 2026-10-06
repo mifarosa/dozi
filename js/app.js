@@ -2,6 +2,7 @@ import {
   QUARTERS, load, save, newId, totalQ, consumedQ, remainingQ, cellQuarters,
   takenTodayQ, daysLeft, formatPills, startQuarters,
 } from './store.js';
+import { parseTimes, pendingTimes, unnotifiedTimes, dayKey } from './reminders.js';
 
 const app = document.getElementById('app');
 const backBtn = document.getElementById('back');
@@ -10,7 +11,8 @@ const dialog = document.getElementById('form-dialog');
 const form = document.getElementById('med-form');
 const formError = document.getElementById('form-error');
 
-let meds = load();
+// Older saved data has no reminder fields, so fill in defaults.
+let meds = load().map((m) => ({ times: [], fired: {}, ...m }));
 let openId = null; // id of the medicine shown in the detail view
 let editingId = null; // id being edited in the form, null when adding
 
@@ -68,6 +70,13 @@ function totalBlisterLeft(m, b) {
 
 // ---- Views -------------------------------------------------------------
 
+// Banner for every medicine whose reminder time has passed without a logged dose.
+function dueBannerHtml() {
+  return meds.filter((m) => pendingTimes(m).length && remainingQ(m) > 0).map((m) => (
+    `<button class="banner" data-open="${esc(m.id)}">Alma zamanı: <b>${esc(m.name)}</b> · ${formatPills(m.dose)} hap</button>`
+  )).join('');
+}
+
 function renderList() {
   if (!meds.length) {
     app.innerHTML = `<div class="empty card">
@@ -76,7 +85,7 @@ function renderList() {
     </div>`;
     return;
   }
-  app.innerHTML = meds.map((m) => {
+  app.innerHTML = dueBannerHtml() + meds.map((m) => {
     const pct = Math.round((remainingQ(m) / totalQ(m)) * 100);
     return `<button class="card med" data-open="${esc(m.id)}">
       <div class="med-row"><strong>${esc(m.name)}</strong><span>${formatPills(remainingQ(m))} hap</span></div>
@@ -100,6 +109,7 @@ function renderDetail(m) {
       <div class="big">${formatPills(remainingQ(m))}<small> / ${formatPills(totalQ(m))} hap</small></div>
       <div class="med-sub">Günlük ${formatPills(perDayQ)} hap · ~${daysLeft(m)} gün yeter${finished ? '' : ` (${end.toLocaleDateString('tr-TR')})`}</div>
       <div class="today ${doneToday ? 'done' : ''}">Bugün: ${formatPills(todayQ)} / ${formatPills(perDayQ)} hap</div>
+      ${m.times.length ? `<div class="med-sub">Hatırlatma: ${m.times.join(', ')}${reminderNote()}</div>` : ''}
     </section>
 
     <section class="card intake">
@@ -122,6 +132,12 @@ function renderDetail(m) {
       <button class="btn ghost" data-edit>Düzenle</button>
       <button class="btn danger" data-delete>Sil</button>
     </div>`;
+}
+
+function reminderNote() {
+  if (!('Notification' in window)) return ' (bu tarayıcı bildirimi desteklemiyor)';
+  if (Notification.permission === 'denied') return ' (bildirim izni kapalı)';
+  return '';
 }
 
 function render() {
@@ -183,6 +199,7 @@ function openForm(m) {
     form.perBlister.value = m.perBlister;
     form.dose.value = m.dose;
     form.perDay.value = m.perDay;
+    m.times.forEach((t, i) => { form[`time${i}`].value = t; });
     // Position fields describe the current state: the pill in use right now.
     const used = consumedQ(m);
     const pillIndex = Math.min(Math.floor(used / QUARTERS), totalQ(m) / QUARTERS - 1);
@@ -214,6 +231,7 @@ form.addEventListener('submit', (e) => {
     perBlister,
     dose: Number(form.dose.value),
     perDay: Number(form.perDay.value),
+    times: parseTimes([form.time0.value, form.time1.value, form.time2.value]),
     // The form describes the current position, so it becomes the new baseline
     // and earlier intake history is folded into it.
     startQ: startQuarters(curBlister, curPill, partLeft, perBlister),
@@ -229,8 +247,58 @@ form.addEventListener('submit', (e) => {
   } else {
     meds.push({ id: newId(), ...fields, log: [] });
   }
+  // Asking from the submit handler keeps the permission prompt tied to a user gesture.
+  if (fields.times.length && 'Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
   dialog.close();
   commit();
+  checkReminders();
+});
+
+// ---- Reminders ---------------------------------------------------------
+
+async function notify(m, time) {
+  const title = `${m.name} zamanı`;
+  const options = {
+    body: `${formatPills(m.dose)} hap · ${time}`,
+    icon: 'icons/icon-192.png',
+    tag: `dozi-${m.id}-${time}`,
+  };
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    if (reg) {
+      await reg.showNotification(title, options);
+      return;
+    }
+  } catch {
+    // Fall back to a page notification below.
+  }
+  new Notification(title, options);
+}
+
+function checkReminders() {
+  const now = new Date();
+  let changed = false;
+  for (const m of meds) {
+    if (remainingQ(m) === 0) continue;
+    for (const t of unnotifiedTimes(m, now)) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        notify(m, t).catch(() => {});
+        m.fired = { ...m.fired, [t]: dayKey(now) };
+        changed = true;
+      }
+    }
+  }
+  if (changed) save(meds);
+  // Pending banners depend on the clock, so refresh the view when idle.
+  if (!dialog.open) render();
+}
+
+setInterval(checkReminders, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkReminders();
 });
 
 render();
+checkReminders();

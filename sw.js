@@ -1,11 +1,12 @@
 // Offline cache for the app shell. Bump CACHE when shipping changes.
-const CACHE = 'dozi-v1';
+const CACHE = 'dozi-v2';
 const ASSETS = [
   './',
   'index.html',
   'css/style.css',
   'js/app.js',
   'js/store.js',
+  'js/reminders.js',
   'manifest.webmanifest',
   'icons/icon.svg',
   'icons/icon-180.png',
@@ -36,5 +37,16 @@ self.addEventListener('fetch', (e) => {
         return res;
       })
       .catch(() => caches.match(e.request, { ignoreSearch: true })),
+  );
+});
+
+// Tapping a reminder focuses an open Dozi window or opens a new one.
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      const open = wins[0];
+      return open ? open.focus() : self.clients.openWindow('./');
+    }),
   );
 });
