@@ -2,7 +2,9 @@ import {
   QUARTERS, load, save, newId, totalQ, consumedQ, remainingQ, cellQuarters,
   takenTodayQ, daysLeft, formatPills, startQuarters,
 } from './store.js';
-import { parseTimes, pendingTimes, unnotifiedTimes, dayKey } from './reminders.js';
+import {
+  parseTimes, pendingTimes, unnotifiedTimes, dayKey, resolveTakeTime, dayComplete,
+} from './reminders.js';
 
 const app = document.getElementById('app');
 const backBtn = document.getElementById('back');
@@ -113,6 +115,9 @@ function renderDetail(m) {
     </section>
 
     <section class="card intake">
+      <label class="take-time">Ne zaman aldın? (boş bırakırsan şu an kaydedilir)
+        <input id="take-time" type="time">
+      </label>
       <button class="btn primary big-btn" data-take="${m.dose}" ${finished ? 'disabled' : ''}>
         Aldım · ${formatPills(m.dose)} hap
       </button>
@@ -122,6 +127,7 @@ function renderDetail(m) {
         <button class="chip" data-take="4" ${finished ? 'disabled' : ''}>1</button>
         <button class="chip ghost" data-undo ${m.log.length ? '' : 'disabled'}>Geri al</button>
       </div>
+      ${todayLogHtml(m)}
     </section>
 
     <section class="blisters">
@@ -150,10 +156,26 @@ function render() {
 
 // ---- Actions -----------------------------------------------------------
 
+// Today's intakes, oldest first, so a wrong time is easy to spot.
+function todayLogHtml(m) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const today = m.log.filter((e) => e.t >= start.getTime()).sort((a, b) => a.t - b.t);
+  if (!today.length) return '';
+  const rows = today.map((e) => {
+    const time = new Date(e.t).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    return `<li>${time} · ${formatPills(e.q)} hap</li>`;
+  });
+  return `<ul class="today-log">${rows.join('')}</ul>`;
+}
+
 function take(m, q) {
   const amount = Math.min(q, remainingQ(m));
   if (amount <= 0) return;
-  m.log.push({ t: Date.now(), q: amount });
+  // Today's dose is already complete: ask before logging an extra one.
+  if (dayComplete(m) && !confirm('Bugünkü dozunu zaten aldın. Yine de bir doz daha kaydedilsin mi?')) return;
+  const input = document.getElementById('take-time');
+  m.log.push({ t: resolveTakeTime(input ? input.value : ''), q: amount });
   commit();
 }
 

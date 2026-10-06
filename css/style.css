@@ -181,3 +181,7 @@ legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
   cursor: pointer;
 }
 .banner b { color: var(--brand); }
+
+.take-time { margin-bottom: 10px; }
+.today-log { list-style: none; margin: 12px 0 0; padding: 0; color: var(--muted); font-size: 0.9rem; }
+.today-log li { padding: 2px 0; }
