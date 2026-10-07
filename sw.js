@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump CACHE when shipping changes.
-const CACHE = 'dozi-v7';
+const CACHE = 'dozi-v8';
 const ASSETS = [
   './',
   'index.html',

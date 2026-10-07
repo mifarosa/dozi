@@ -144,7 +144,7 @@ function renderCalendarView() {
       const k = dayKey(d);
       const items = byDay.get(k) || [];
       const cls = ['cal-day', d.getMonth() !== m ? 'out' : '', items.length ? 'has' : '',
-        k === todayKey ? 'today' : '', k === selectedDay ? 'selected' : ''].join(' ');
+        k === todayKey ? 'is-today' : '', k === selectedDay ? 'selected' : ''].join(' ');
       const dots = dayKinds(items).map((kind) => `<i class="dot-${kind}"></i>`).join('');
       const label = `${dayFmt.format(d)}${items.length ? `, ${items.length} kayıt` : ''}`;
       grid += `<button type="button" class="${cls}" data-day="${k}" aria-label="${label}">
