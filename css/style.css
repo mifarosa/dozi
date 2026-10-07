@@ -177,7 +177,6 @@ legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
 .error { color: var(--danger); margin: 0 0 8px; }
 .error[hidden] { display: none; }
 
-.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
 .hint { color: var(--muted); font-size: 0.8rem; margin: 0 0 10px; }
 
 .banner {
@@ -215,7 +214,7 @@ legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
 
 /* ---------- Form layout ---------- */
 
-.grid2 > *, .grid3 > * { min-width: 0; }
+.grid2 > * { min-width: 0; }
 
 .actions.sticky {
   position: sticky;
@@ -236,15 +235,8 @@ legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
   border: 1px solid var(--line);
   font-size: 1.2rem;
 }
-.btn.full { width: 100%; }
 .chips.wrap { flex-wrap: wrap; }
 .chips.wrap .chip { flex: 0 0 auto; padding: 8px 14px; }
-
-/* ---------- Extras (vitamins, teas, ...) ---------- */
-
-.extras h2 { margin: 0 0 2px; font-size: 1.1rem; }
-.extras .chips { margin: 12px 0; }
-.extras .today-log { margin: 10px 0 0; }
 
 /* ---------- Calendar ---------- */
 
