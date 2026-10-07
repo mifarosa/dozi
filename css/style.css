@@ -216,7 +216,7 @@ legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
 /* ---------- Form layout ---------- */
 
 .grid2 > *, .grid3 > * { min-width: 0; }
-input[type="time"], input[type="date"] { min-width: 0; min-height: 44px; }
+
 .actions.sticky {
   position: sticky;
   bottom: -20px;
@@ -388,3 +388,32 @@ input, select, textarea { font-size: max(16px, 1rem); }
 .choice:active { transform: scale(0.99); }
 #extra-chips { margin: -4px 0 12px; }
 #extra-chips .chip { flex: 0 0 auto; padding: 7px 12px; font-size: 0.85rem; }
+
+/* ---------- Date and time fields ---------- */
+
+/* iOS draws native date/time fields at their own intrinsic size and ignores
+   width:100%, so they come out too wide or too narrow next to text fields.
+   Dropping the native look makes them obey the same box as every other input. */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  margin: 4px 0 0;
+  text-align: left;
+  line-height: 1.2;
+  overflow: hidden;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  display: block;
+  min-height: 1.2em;
+  margin: 0;
+  text-align: left;
+}
+/* Inside an alarm row the field shares the line with its remove button. */
+.time-row input[type="time"] { flex: 1 1 0; width: auto; margin-top: 0; }
