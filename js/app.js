@@ -98,27 +98,10 @@ function dueBannerHtml() {
 
 const timeFmt = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
-// Card for logging things outside the tracked medicines: one tap for recent ones.
-function extrasCardHtml() {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const today = extras.filter((x) => x.t >= startOfToday.getTime()).sort((a, b) => a.t - b.t);
-  const chips = recentExtras(extras).map((r) => (
-    `<button class="chip" data-extra-quick="${esc(r.name)}" data-kind="${esc(r.kind)}">${esc(r.name)}</button>`
-  )).join('');
-  return `<section class="card extras">
-    <h2>Başka bir şey içtim</h2>
-    <p class="med-sub">Vitamin, bitki çayı gibi ilaç dışı şeyleri de kaydet.</p>
-    ${today.length ? `<ul class="today-log">${today.map((x) => `<li>${timeFmt.format(new Date(x.t))} · ${esc(x.name)}</li>`).join('')}</ul>` : ''}
-    ${chips ? `<div class="chips wrap">${chips}</div>` : ''}
-    <button class="btn ghost full" data-extra-add>+ Yeni kayıt</button>
-  </section>`;
-}
-
 function renderList() {
   const empty = meds.length ? '' : `<div class="empty card">
       <h2>Henüz ilaç yok</h2>
-      <p>Sağ üstteki <b>+</b> ile ilk ilacını ekle. Kutudaki blister ve hap sayısını gir, kaldığın yerden başla.</p>
+      <p>Sağ üstteki <b>+</b> ile ilk ilacını ekle. Kutudaki blister ve hap sayısını gir, kaldığın yerden başla. Vitamin ya da bitki çayı gibi şeyleri de aynı yerden kaydedebilirsin.</p>
     </div>`;
   app.innerHTML = dueBannerHtml() + empty + meds.map((m) => {
     const pct = Math.round((remainingQ(m) / totalQ(m)) * 100);
@@ -127,7 +110,7 @@ function renderList() {
       <div class="bar"><div style="width:${pct}%"></div></div>
       <div class="med-sub">~${daysLeft(m)} gün yeter</div>
     </button>`;
-  }).join('') + extrasCardHtml();
+  }).join('');
 }
 
 // ---- Calendar ----------------------------------------------------------
@@ -192,7 +175,6 @@ function renderCalendarView() {
       <h2 class="section-title">${title}</h2>
       ${selectedDay ? '<button type="button" class="chip" data-cal="all">Tüm ay</button>' : ''}
     </div>
-    <button class="btn ghost full" data-extra-add>+ Bir şey içtim</button>
     ${shown.length ? shown.map((e) => (selectedDay ? '' : dayHeading(e, shown)) + entryRowHtml(e)).join('')
       : `<p class="empty-note">${entries.length ? 'Bu tarihte kayıt yok.' : 'Henüz kayıt yok. İlaç aldığında ya da bir şey içtiğinde burada görünür.'}</p>`}`;
 }
@@ -258,13 +240,26 @@ function render() {
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === view));
   if (view === 'calendar') {
     backBtn.hidden = true;
-    addBtn.hidden = true;
+    addBtn.hidden = false;
     renderCalendarView();
+    scrollOnScreenChange();
     return;
   }
   backBtn.hidden = !m;
   addBtn.hidden = !!m;
   if (m) renderDetail(m); else renderList();
+  scrollOnScreenChange();
+}
+
+// A new screen starts at the top; otherwise it opens at the old scroll position,
+// which on a phone looks like the page jumped in "zoomed" and half-way down.
+let lastScreen = '';
+function scrollOnScreenChange() {
+  const screen = `${view}:${openId || ''}`;
+  if (screen !== lastScreen) {
+    lastScreen = screen;
+    window.scrollTo(0, 0);
+  }
 }
 
 // ---- Actions -----------------------------------------------------------
@@ -297,12 +292,7 @@ app.addEventListener('click', (e) => {
   if (!target) return;
   const m = meds.find((x) => x.id === openId);
 
-  if ('extraAdd' in target.dataset) {
-    openExtraForm();
-  } else if (target.dataset.extraQuick) {
-    extras.push({ id: newId(), name: target.dataset.extraQuick, kind: target.dataset.kind, t: Date.now() });
-    commit();
-  } else if (target.dataset.day) {
+  if (target.dataset.day) {
     selectedDay = selectedDay === target.dataset.day ? null : target.dataset.day;
     const d = new Date(`${target.dataset.day}T12:00:00`);
     if (d.getMonth() !== calMonth.getMonth()) calMonth = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -352,7 +342,15 @@ document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click',
   if (view === 'meds') openId = null;
   render();
 }));
-addBtn.addEventListener('click', () => openForm(null));
+const chooseDialog = document.getElementById('choose-dialog');
+addBtn.addEventListener('click', () => chooseDialog.showModal());
+document.getElementById('choose-cancel').addEventListener('click', () => chooseDialog.close());
+chooseDialog.addEventListener('click', (e) => {
+  const choice = e.target.closest('[data-choose]')?.dataset.choose;
+  if (!choice) return;
+  chooseDialog.close();
+  if (choice === 'med') openForm(null); else openExtraForm();
+});
 document.getElementById('form-cancel').addEventListener('click', () => dialog.close());
 
 const timeRows = document.getElementById('time-rows');
@@ -451,8 +449,14 @@ form.addEventListener('submit', (e) => {
 
 const extraDialog = document.getElementById('extra-dialog');
 const extraForm = document.getElementById('extra-form');
-const SUGGESTIONS = ['C vitamini', 'D vitamini', 'B12 vitamini', 'Magnezyum', 'Omega 3', 'Papatya çayı',
-  'Ihlamur', 'Adaçayı', 'Rezene çayı', 'Yeşil çay', 'Nane limon'];
+// Always-visible examples. Your own recent entries come first, then these fill the gaps.
+const SUGGESTIONS = [
+  { name: 'C vitamini', kind: 'supplement' }, { name: 'D vitamini', kind: 'supplement' },
+  { name: 'Magnezyum', kind: 'supplement' }, { name: 'Omega 3', kind: 'supplement' },
+  { name: 'Papatya çayı', kind: 'tea' }, { name: 'Ihlamur', kind: 'tea' },
+  { name: 'Adaçayı', kind: 'tea' }, { name: 'Yeşil çay', kind: 'tea' }, { name: 'Rezene çayı', kind: 'tea' },
+];
+const MAX_CHIPS = 10;
 const pad2 = (n) => String(n).padStart(2, '0');
 
 function openExtraForm() {
@@ -462,8 +466,14 @@ function openExtraForm() {
   // The calendar's selected day pre-fills the date so older days are easy to fill in.
   extraForm.date.value = view === 'calendar' && selectedDay ? selectedDay : dayKey(now);
   extraForm.time.value = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-  const names = new Set([...recentExtras(extras, 20).map((r) => r.name), ...SUGGESTIONS]);
-  document.getElementById('extra-names').innerHTML = [...names].map((n) => `<option value="${esc(n)}">`).join('');
+  const chips = recentExtras(extras, 6);
+  for (const sug of SUGGESTIONS) {
+    if (chips.length >= MAX_CHIPS) break;
+    if (!chips.some((c) => c.name.toLowerCase() === sug.name.toLowerCase())) chips.push(sug);
+  }
+  document.getElementById('extra-chips').innerHTML = chips.map((c) => (
+    `<button type="button" class="chip" data-name="${esc(c.name)}" data-kind="${esc(c.kind)}">${esc(c.name)}</button>`
+  )).join('');
   extraDialog.showModal();
 }
 
@@ -474,6 +484,12 @@ extraForm.name.addEventListener('input', () => {
 });
 
 document.getElementById('extra-cancel').addEventListener('click', () => extraDialog.close());
+document.getElementById('extra-chips').addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  extraForm.name.value = chip.dataset.name;
+  extraForm.kind.value = chip.dataset.kind;
+});
 
 extraForm.addEventListener('submit', (e) => {
   e.preventDefault();
