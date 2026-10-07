@@ -161,6 +161,7 @@ dialog h2 { margin-top: 0; }
 label { display: block; margin-bottom: 12px; font-size: 0.9rem; color: var(--muted); }
 input, select {
   display: block;
+  font-size: 16px;
   width: 100%;
   margin-top: 4px;
   padding: 10px;
@@ -357,3 +358,33 @@ input[type="time"], input[type="date"] { min-width: 0; min-height: 44px; }
   text-decoration: none;
 }
 .coffee-pill:active { transform: scale(0.97); }
+
+/* ---------- Phone behaviour ---------- */
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* A double tap on a button should press it twice, not zoom the page. */
+button, a, .cal-day, .tab, input, select, label { touch-action: manipulation; }
+input, select, textarea { font-size: max(16px, 1rem); }
+
+/* ---------- Add chooser ---------- */
+
+#choose-dialog h2 { margin-top: 0; }
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.choice span { color: var(--muted); font-size: 0.85rem; }
+.choice:active { transform: scale(0.99); }
+#extra-chips { margin: -4px 0 12px; }
+#extra-chips .chip { flex: 0 0 auto; padding: 7px 12px; font-size: 0.85rem; }

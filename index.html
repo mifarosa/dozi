@@ -45,6 +45,21 @@
     </button>
   </nav>
 
+  <dialog id="choose-dialog">
+    <h2>Ne eklemek istiyorsun?</h2>
+    <button type="button" class="choice" data-choose="med">
+      <strong>Düzenli ilaç</strong>
+      <span>Kutu, blister ve hap sayısını takip et</span>
+    </button>
+    <button type="button" class="choice" data-choose="extra">
+      <strong>Günlük kayıt</strong>
+      <span>Vitamin, bitki çayı gibi bir şey içtim</span>
+    </button>
+    <div class="actions">
+      <button type="button" id="choose-cancel" class="btn ghost">Vazgeç</button>
+    </div>
+  </dialog>
+
   <dialog id="form-dialog">
     <form id="med-form" method="dialog">
       <h2 id="form-title">Yeni ilaç</h2>
@@ -118,9 +133,9 @@
       <h2>Ne içtin?</h2>
 
       <label>Adı
-        <input name="name" required maxlength="40" list="extra-names" autocomplete="off" placeholder="Örn. Papatya çayı">
+        <input name="name" required maxlength="40" autocomplete="off" placeholder="Yaz ya da aşağıdan seç">
       </label>
-      <datalist id="extra-names"></datalist>
+      <div id="extra-chips" class="chips wrap" aria-label="Önerilenler"></div>
 
       <label>Türü
         <select name="kind">
@@ -130,14 +145,12 @@
         </select>
       </label>
 
-      <div class="grid2">
-        <label>Gün
-          <input name="date" type="date" required>
-        </label>
-        <label>Saat
-          <input name="time" type="time" required>
-        </label>
-      </div>
+      <label>Gün
+        <input name="date" type="date" required>
+      </label>
+      <label>Saat
+        <input name="time" type="time" required>
+      </label>
 
       <div class="actions sticky">
         <button type="button" id="extra-cancel" class="btn ghost">Vazgeç</button>
