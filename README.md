@@ -7,7 +7,9 @@
 - Çeyrek, yarım, tam, 1,5 ve 2 hap dozları; günde kaç kez alındığı
 - Blister gözleriyle görsel takip, kalan hap ve tahmini bitiş günü
 - "Aldım" butonu, tek seferlik ¼ / ½ / 1 seçenekleri ve geri alma
-- Hatırlatma saatleri (ilaç başına en fazla 3): saat geçtiği halde doz alınmadıysa bildirim ve ana ekranda uyarı
+- Hatırlatma saatleri (ilaç başına en fazla 6): saat geçtiği halde doz alınmadıysa bildirim ve ana ekranda uyarı
+- Takvim: ay görünümü, günlere göre ilaç ve içecek kayıtları, saatleriyle liste, kayıt silme
+- Ek kayıtlar: vitamin, takviye, bitki çayı gibi ilaç dışı şeyleri tek dokunuşla ya da geçmiş bir güne kaydetme
 - İsteğe bağlı Firebase yedeği: Google ile giriş yapınca veriler Firestore'a yedeklenir, cihazlar arası senkronize olur
 - Veriler cihazda (localStorage) saklanır; çevrimdışı çalışır, ana ekrana eklenebilir
 
