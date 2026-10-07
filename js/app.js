@@ -1,10 +1,12 @@
 import {
   QUARTERS, load, save, newId, totalQ, consumedQ, remainingQ, cellQuarters,
-  takenTodayQ, daysLeft, formatPills, startQuarters,
+  takenTodayQ, daysLeft, formatPills, startQuarters, loadMeta, saveMeta, normalizeMed,
 } from './store.js';
 import {
   parseTimes, pendingTimes, unnotifiedTimes, dayKey, resolveTakeTime, dayComplete,
 } from './reminders.js';
+import { decideSync, mergeMeds } from './sync.js';
+import * as cloud from './cloud.js';
 
 const app = document.getElementById('app');
 const backBtn = document.getElementById('back');
@@ -13,8 +15,10 @@ const dialog = document.getElementById('form-dialog');
 const form = document.getElementById('med-form');
 const formError = document.getElementById('form-error');
 
-// Older saved data has no reminder fields, so fill in defaults.
-let meds = load().map((m) => ({ times: [], fired: {}, ...m }));
+let meds = load().map(normalizeMed);
+let meta = loadMeta(); // { updatedAt, uid } for cloud sync
+let cloudUser = null;
+let cloudStatus = ''; // short text shown in the cloud bar
 let openId = null; // id of the medicine shown in the detail view
 let editingId = null; // id being edited in the form, null when adding
 
@@ -24,6 +28,9 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => (
 
 function commit() {
   save(meds);
+  meta = { ...meta, updatedAt: Date.now() };
+  saveMeta(meta);
+  pushToCloud();
   render();
 }
 
@@ -320,6 +327,90 @@ function checkReminders() {
 setInterval(checkReminders, 30000);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) checkReminders();
+});
+
+// ---- Cloud backup ------------------------------------------------------
+
+const cloudBar = document.getElementById('cloud-bar');
+
+function renderCloudBar() {
+  if (!cloud.available) return;
+  cloudBar.hidden = false;
+  if (!cloudUser) {
+    cloudBar.innerHTML = `<span>${esc(cloudStatus || 'Verilerin kaybolmasın: hesabınla yedekle')}</span>
+      <button class="btn primary small" data-cloud="in">Google ile giriş</button>`;
+    return;
+  }
+  cloudBar.innerHTML = `<span>&#9729; ${esc(cloudUser.email || 'Giriş yapıldı')} · ${esc(cloudStatus || 'yedekleniyor')}</span>
+    <button class="btn ghost small" data-cloud="out">Çıkış</button>`;
+}
+
+function setCloudStatus(text) {
+  cloudStatus = text;
+  renderCloudBar();
+}
+
+async function pushToCloud() {
+  if (!cloudUser) return;
+  try {
+    await cloud.pushMeds(cloudUser.uid, meds, meta.updatedAt);
+    meta = { ...meta, uid: cloudUser.uid };
+    saveMeta(meta);
+    setCloudStatus('yedeklendi');
+  } catch {
+    // The Firestore SDK keeps the write queued and retries once we are online.
+    setCloudStatus('yedekleme bekliyor');
+  }
+}
+
+function applyRemote(remote) {
+  const decision = decideSync({
+    localUpdated: meta.updatedAt,
+    localSynced: meta.uid === cloudUser.uid,
+    localCount: meds.length,
+    remote: remote && { meds: remote.meds || [], updatedAt: Number(remote.updatedAt) || 0 },
+  });
+  if (decision === 'pull') {
+    meds = (remote.meds || []).map(normalizeMed);
+    save(meds);
+    meta = { updatedAt: Number(remote.updatedAt) || 0, uid: cloudUser.uid };
+    saveMeta(meta);
+    setCloudStatus('yedekten yüklendi');
+    render();
+  } else if (decision === 'merge') {
+    meds = mergeMeds(meds, (remote.meds || []).map(normalizeMed));
+    save(meds);
+    commit();
+  } else if (decision === 'push') {
+    pushToCloud();
+  } else {
+    meta = { ...meta, uid: cloudUser.uid };
+    saveMeta(meta);
+    setCloudStatus('yedeklendi');
+  }
+}
+
+cloudBar.addEventListener('click', async (e) => {
+  const action = e.target.closest('button')?.dataset.cloud;
+  try {
+    if (action === 'in') await cloud.signIn();
+    if (action === 'out') await cloud.signOut();
+  } catch {
+    setCloudStatus('giriş yapılamadı');
+  }
+});
+
+renderCloudBar();
+cloud.startCloud({
+  onUser(user) {
+    cloudUser = user;
+    cloudStatus = user ? 'bağlanıyor' : '';
+    renderCloudBar();
+  },
+  onRemote: applyRemote,
+  onError() {
+    setCloudStatus('bağlantı kurulamadı');
+  },
 });
 
 render();

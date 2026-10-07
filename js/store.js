@@ -20,6 +20,29 @@ export function save(meds) {
   }
 }
 
+const META_KEY = 'dozi.sync';
+
+// Sync bookkeeping: when local data last changed and which account it last synced with.
+export function loadMeta() {
+  try {
+    const meta = JSON.parse(localStorage.getItem(META_KEY));
+    return { updatedAt: Number(meta?.updatedAt) || 0, uid: meta?.uid || null };
+  } catch {
+    return { updatedAt: 0, uid: null };
+  }
+}
+
+export function saveMeta(meta) {
+  try {
+    localStorage.setItem(META_KEY, JSON.stringify(meta));
+  } catch {
+    // Same as save(): not fatal.
+  }
+}
+
+// Older saved data has no reminder fields, so fill in defaults.
+export const normalizeMed = (m) => ({ times: [], fired: {}, log: [], ...m });
+
 export function newId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
