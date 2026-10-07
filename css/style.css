@@ -185,3 +185,17 @@ legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
 .take-time { margin-bottom: 10px; }
 .today-log { list-style: none; margin: 12px 0 0; padding: 0; color: var(--muted); font-size: 0.9rem; }
 .today-log li { padding: 2px 0; }
+
+.cloud-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: 560px;
+  margin: 0 auto 8px;
+  padding: 0 16px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.cloud-bar[hidden] { display: none; }
+.btn.small { padding: 6px 12px; font-size: 0.85rem; white-space: nowrap; }

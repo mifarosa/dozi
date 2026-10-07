@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump CACHE when shipping changes.
-const CACHE = 'dozi-v3';
+const CACHE = 'dozi-v4';
 const ASSETS = [
   './',
   'index.html',
@@ -7,6 +7,9 @@ const ASSETS = [
   'js/app.js',
   'js/store.js',
   'js/reminders.js',
+  'js/sync.js',
+  'js/cloud.js',
+  'js/firebase-config.js',
   'manifest.webmanifest',
   'icons/icon.svg',
   'icons/icon-180.png',
