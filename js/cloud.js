@@ -22,7 +22,7 @@ async function loadSdk() {
   return sdk;
 }
 
-// handlers.onUser(user | null), handlers.onRemote({ meds, updatedAt } | null), handlers.onError(err)
+// handlers.onUser(user | null), handlers.onRemote({ meds, extras, updatedAt } | null), handlers.onError(err)
 export async function startCloud(handlers) {
   if (!available) return;
   try {
@@ -64,7 +64,8 @@ export async function signOut() {
   await authMod.signOut(auth);
 }
 
-export async function pushMeds(uid, meds, updatedAt) {
+// data is { meds, extras }; the whole state lives in one document per user.
+export async function pushData(uid, data, updatedAt) {
   const { db, fsMod } = await loadSdk();
-  await fsMod.setDoc(fsMod.doc(db, 'users', uid), { meds, updatedAt });
+  await fsMod.setDoc(fsMod.doc(db, 'users', uid), { meds: data.meds, extras: data.extras, updatedAt });
 }

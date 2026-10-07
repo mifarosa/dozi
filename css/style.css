@@ -9,6 +9,11 @@
   --pill-empty: #dbe7e5;
   --danger: #b42318;
   --line: #d5e2df;
+  --kind-med: #0f766e;
+  --kind-supplement: #f59e0b;
+  --kind-tea: #65a30d;
+  --kind-other: #64748b;
+  --coffee: #ffdd00;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,6 +28,10 @@
     --pill-empty: #243a37;
     --danger: #f97066;
     --line: #27403c;
+    --kind-med: #2dd4bf;
+    --kind-supplement: #fbbf24;
+    --kind-tea: #a3e635;
+    --kind-other: #94a3b8;
   }
 }
 
@@ -61,7 +70,7 @@ body {
 .icon-btn[hidden] { display: none; }
 #back { background: transparent; color: var(--text); border: 1px solid var(--line); }
 
-main { padding: 4px 16px 32px; max-width: 560px; margin: 0 auto; }
+main { padding: 4px 16px calc(88px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
 
 .card {
   background: var(--card);
@@ -138,6 +147,9 @@ button.card.med {
 
 dialog {
   width: min(92vw, 480px);
+  max-height: calc(100dvh - 32px);
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 0;
   border-radius: 16px;
   padding: 20px;
@@ -158,7 +170,7 @@ input, select {
   color: var(--text);
   font: inherit;
 }
-fieldset { border: 1px solid var(--line); border-radius: 12px; margin: 0 0 12px; padding: 8px 12px 0; }
+fieldset { min-width: 0; border: 1px solid var(--line); border-radius: 12px; margin: 0 0 12px; padding: 8px 12px 4px; }
 legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .error { color: var(--danger); margin: 0 0 8px; }
@@ -199,3 +211,149 @@ legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
 }
 .cloud-bar[hidden] { display: none; }
 .btn.small { padding: 6px 12px; font-size: 0.85rem; white-space: nowrap; }
+
+/* ---------- Form layout ---------- */
+
+.grid2 > *, .grid3 > * { min-width: 0; }
+input[type="time"], input[type="date"] { min-width: 0; min-height: 44px; }
+.actions.sticky {
+  position: sticky;
+  bottom: -20px;
+  margin: 0 -20px -20px;
+  padding: 12px 20px;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+.time-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.time-row input { flex: 1; margin-top: 0; }
+.icon-btn.mini {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  font-size: 1.2rem;
+}
+.btn.full { width: 100%; }
+.chips.wrap { flex-wrap: wrap; }
+.chips.wrap .chip { flex: 0 0 auto; padding: 8px 14px; }
+
+/* ---------- Extras (vitamins, teas, ...) ---------- */
+
+.extras h2 { margin: 0 0 2px; font-size: 1.1rem; }
+.extras .chips { margin: 12px 0; }
+.extras .today-log { margin: 10px 0 0; }
+
+/* ---------- Calendar ---------- */
+
+.calendar { padding: 12px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal-head h3 { margin: 0; font-size: 1.05rem; text-transform: capitalize; }
+.cal-head .icon-btn { width: 36px; height: 36px; font-size: 1.5rem; padding-bottom: 3px; }
+.cal-head .icon-btn:disabled { opacity: 0.3; cursor: default; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-dow { text-align: center; font-size: 0.7rem; color: var(--muted); padding-bottom: 2px; }
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--pill-empty);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  padding: 0;
+  min-width: 0;
+  cursor: pointer;
+}
+.cal-day.out { opacity: 0.35; }
+.cal-day.has { background: color-mix(in srgb, var(--brand) 22%, var(--pill-empty)); font-weight: 700; }
+.cal-day.today { outline: 2px solid var(--text); outline-offset: -2px; }
+.cal-day.selected { background: var(--brand); color: #fff; }
+.cal-day .dots { display: flex; gap: 2px; height: 5px; }
+.cal-day .dots i, .cal-legend i { width: 5px; height: 5px; border-radius: 50%; display: block; }
+.dot-med { background: var(--kind-med); }
+.dot-supplement { background: var(--kind-supplement); }
+.dot-tea { background: var(--kind-tea); }
+.dot-other { background: var(--kind-other); }
+.cal-day.selected .dots i { background: #fff; }
+
+.cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 0.75rem; color: var(--muted); }
+.cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.cal-summary { margin: 10px 0 0; font-size: 0.9rem; color: var(--muted); }
+.cal-summary b { color: var(--text); }
+
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 8px; }
+.section-title { margin: 0; font-size: 0.95rem; text-transform: capitalize; }
+.list-head .chip { flex: none; padding: 6px 12px; font-size: 0.8rem; }
+.day-heading { margin: 16px 0 6px; font-size: 0.85rem; color: var(--muted); font-weight: 600; text-transform: capitalize; }
+.empty-note { color: var(--muted); text-align: center; margin: 16px 0; }
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin: 8px 0 0;
+  border-left: 4px solid var(--kind-other);
+}
+.entry.kind-med { border-left-color: var(--kind-med); }
+.entry.kind-supplement { border-left-color: var(--kind-supplement); }
+.entry.kind-tea { border-left-color: var(--kind-tea); }
+.entry-time { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 3.2em; }
+.entry-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.entry-main strong { overflow-wrap: anywhere; }
+.entry-main .med-sub { margin: 0; }
+
+/* ---------- Tab bar ---------- */
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.tab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab.active { color: var(--brand); font-weight: 600; }
+
+/* ---------- Buy Me a Coffee (same pill as HitFilan) ---------- */
+
+.coffee { margin: 28px 0 8px; text-align: center; }
+.coffee p { margin: 0 0 10px; font-size: 0.8rem; color: var(--muted); }
+.coffee-pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: var(--coffee);
+  color: #14181e;
+  text-decoration: none;
+}
+.coffee-pill:active { transform: scale(0.97); }

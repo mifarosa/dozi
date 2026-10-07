@@ -20,6 +20,26 @@ export function save(meds) {
   }
 }
 
+const EXTRAS_KEY = 'dozi.extras';
+
+// Free-form intakes (vitamins, herbal teas, ...) kept apart from tracked medicines.
+export function loadExtras() {
+  try {
+    const data = JSON.parse(localStorage.getItem(EXTRAS_KEY));
+    return Array.isArray(data) ? data.filter((x) => x && x.name && Number.isFinite(x.t)) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveExtras(extras) {
+  try {
+    localStorage.setItem(EXTRAS_KEY, JSON.stringify(extras));
+  } catch {
+    // Same as save(): not fatal.
+  }
+}
+
 const META_KEY = 'dozi.sync';
 
 // Sync bookkeeping: when local data last changed and which account it last synced with.

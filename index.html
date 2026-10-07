@@ -23,7 +23,27 @@
 
   <div id="cloud-bar" class="cloud-bar" hidden></div>
 
-  <main id="app"></main>
+  <main>
+    <div id="app"></div>
+
+    <div class="coffee">
+      <p>Dozi ücretsiz ve reklamsız.</p>
+      <a class="coffee-pill" href="https://buymeacoffee.com/mifarosa" target="_blank" rel="noopener">
+        <span aria-hidden="true">&#9749;</span> Bana bir kahve ısmarla
+      </a>
+    </div>
+  </main>
+
+  <nav class="tabbar" aria-label="Menü">
+    <button class="tab active" data-view="meds">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.5 6.5l5 7"/></svg>
+      <span>İlaçlar</span>
+    </button>
+    <button class="tab" data-view="calendar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      <span>Takvim</span>
+    </button>
+  </nav>
 
   <dialog id="form-dialog">
     <form id="med-form" method="dialog">
@@ -78,19 +98,49 @@
       </div>
 
       <fieldset>
-        <legend>Hatırlatma saatleri (isteğe bağlı)</legend>
-        <div class="grid3">
-          <input name="time0" type="time" aria-label="1. saat">
-          <input name="time1" type="time" aria-label="2. saat">
-          <input name="time2" type="time" aria-label="3. saat">
-        </div>
+        <legend>Hatırlatma saatleri</legend>
+        <div id="time-rows"></div>
+        <button type="button" id="add-time" class="btn ghost small">+ Saat ekle</button>
         <p class="hint">Bildirimler uygulama açıkken ya da tarayıcı arka planda canlı tutarken gelir; telefon uygulamayı tamamen kapatırsa gecikebilir.</p>
       </fieldset>
 
       <p id="form-error" class="error" hidden></p>
 
-      <div class="actions">
+      <div class="actions sticky">
         <button type="button" id="form-cancel" class="btn ghost">Vazgeç</button>
+        <button type="submit" class="btn primary">Kaydet</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="extra-dialog">
+    <form id="extra-form" method="dialog">
+      <h2>Ne içtin?</h2>
+
+      <label>Adı
+        <input name="name" required maxlength="40" list="extra-names" autocomplete="off" placeholder="Örn. Papatya çayı">
+      </label>
+      <datalist id="extra-names"></datalist>
+
+      <label>Türü
+        <select name="kind">
+          <option value="supplement">Vitamin / takviye</option>
+          <option value="tea">Bitki çayı</option>
+          <option value="other">Diğer</option>
+        </select>
+      </label>
+
+      <div class="grid2">
+        <label>Gün
+          <input name="date" type="date" required>
+        </label>
+        <label>Saat
+          <input name="time" type="time" required>
+        </label>
+      </div>
+
+      <div class="actions sticky">
+        <button type="button" id="extra-cancel" class="btn ghost">Vazgeç</button>
         <button type="submit" class="btn primary">Kaydet</button>
       </div>
     </form>
