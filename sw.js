@@ -1,11 +1,25 @@
 // Offline cache for the app shell. Bump CACHE when shipping changes.
-const CACHE = 'dozi-v6';
+const CACHE = 'dozi-v9';
 const ASSETS = [
   './',
   'index.html',
   'css/style.css',
   'js/app.js',
   'js/store.js',
+  'js/state.js',
+  'js/dates.js',
+  'js/html.js',
+  'js/notifications.js',
+  'js/reminderLoop.js',
+  'js/cloudSync.js',
+  'js/actions.js',
+  'js/views/pills.js',
+  'js/views/list.js',
+  'js/views/detail.js',
+  'js/views/calendar.js',
+  'js/ui/chooser.js',
+  'js/ui/medForm.js',
+  'js/ui/extraForm.js',
   'js/reminders.js',
   'js/history.js',
   'js/sync.js',

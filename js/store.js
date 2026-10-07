@@ -1,5 +1,7 @@
 // Persistence and pure pill math. All amounts are counted in quarter pills
 // so that 1/4, 1/2 and whole doses never need floating point.
+import { startOfDay } from './dates.js';
+
 const KEY = 'dozi.v1';
 export const QUARTERS = 4;
 
@@ -83,7 +85,7 @@ export function cellQuarters(m, index) {
 }
 
 export function takenTodayQ(m, now = new Date()) {
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const start = startOfDay(now).getTime();
   return m.log.filter((e) => e.t >= start).reduce((sum, e) => sum + e.q, 0);
 }
 

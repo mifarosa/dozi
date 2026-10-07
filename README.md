@@ -36,3 +36,23 @@ Firebase ayarı boşken uygulama yalnızca cihazda çalışır; giriş çubuğu 
 5. Web uygulaması ayarlarındaki `apiKey`, `authDomain`, `projectId`, `appId` değerlerini `js/firebase-config.js` dosyasına yaz. Bu değerler gizli değildir; erişimi kurallar korur.
 
 Senkronizasyon: her değişiklik hesabındaki tek bir belgeye yazılır ve en yeni sürüm kazanır. İlk girişte hem cihazda hem hesapta ilaç varsa ikisi birleştirilir. Çevrimdışıyken yapılan değişiklikler bağlantı gelince gönderilir.
+
+## Proje yapısı
+Derleme yok; `js/` altındaki dosyalar tarayıcıda ES modülü olarak çalışır.
+
+| Dosya | Görevi |
+| --- | --- |
+| `js/app.js` | Giriş noktası: ekranı çizer, üst düzey düğmeleri bağlar |
+| `js/state.js` | Tek durum nesnesi; `commit()` kaydedip haber verir, `refresh()` yalnızca yeniden çizer |
+| `js/actions.js` | `#app` içindeki tıklamaları `data-*` özniteliklerine göre yönlendirir |
+| `js/views/` | Ekranlar (liste, ilaç detayı, takvim, blister çizimi); durumu okuyup HTML döndürür, DOM'a dokunmaz |
+| `js/ui/` | Diyaloglar: ilaç formu, "ne içtin" formu, `+` seçim penceresi |
+| `js/reminderLoop.js`, `js/notifications.js` | Hatırlatma zamanlayıcısı ve bildirimler |
+| `js/cloudSync.js`, `js/cloud.js`, `js/sync.js` | Bulut yedeği: arayüz çubuğu, Firebase sarmalayıcı, birleştirme kararları |
+| `js/store.js`, `js/reminders.js`, `js/history.js`, `js/dates.js`, `js/html.js` | Saf mantık ve yardımcılar (testlenir) |
+
+## Test
+```sh
+npm test
+```
+Saf mantık modülleri için bağımlılıksız Node testleri (`tests/`).
