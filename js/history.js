@@ -1,5 +1,5 @@
 // Calendar data: turns medicine intakes and free-form drinks into one timeline.
-import { dayKey } from './reminders.js';
+import { dayKey } from './dates.js';
 import { formatPills } from './store.js';
 
 // Free-form things people drink or take besides their prescribed medicines.
@@ -11,18 +11,6 @@ export const EXTRA_KINDS = {
 
 export const KIND_LABELS = { med: 'İlaç', ...EXTRA_KINDS };
 const KIND_ORDER = ['med', 'supplement', 'tea', 'other'];
-
-export const DAY_NAMES = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-
-export function addDays(d, n) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
-}
-
-// Weeks start on Monday, like the rest of the Turkish calendar UI.
-export function startOfWeek(d) {
-  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  return addDays(day, -((day.getDay() + 6) % 7));
-}
 
 // Every intake and extra, newest first.
 export function buildEntries(meds, extras) {
@@ -88,4 +76,24 @@ export function resolveExtraTime(date, time, now = new Date()) {
   if (!m || !t) return now.getTime();
   const at = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(t[1]), Number(t[2]));
   return at.getTime() > now.getTime() ? now.getTime() : at.getTime();
+}
+
+// Always-visible examples for the "what did you drink" form. The user's own recent
+// entries come first, then these fill the gaps.
+export const SUGGESTIONS = [
+  { name: 'C vitamini', kind: 'supplement' }, { name: 'D vitamini', kind: 'supplement' },
+  { name: 'Magnezyum', kind: 'supplement' }, { name: 'Omega 3', kind: 'supplement' },
+  { name: 'Papatya çayı', kind: 'tea' }, { name: 'Ihlamur', kind: 'tea' },
+  { name: 'Adaçayı', kind: 'tea' }, { name: 'Yeşil çay', kind: 'tea' }, { name: 'Rezene çayı', kind: 'tea' },
+];
+const MAX_CHIPS = 10;
+const RECENT_CHIPS = 6;
+
+export function suggestionChips(extras) {
+  const chips = recentExtras(extras, RECENT_CHIPS);
+  for (const sug of SUGGESTIONS) {
+    if (chips.length >= MAX_CHIPS) break;
+    if (!chips.some((c) => c.name.toLowerCase() === sug.name.toLowerCase())) chips.push(sug);
+  }
+  return chips;
 }

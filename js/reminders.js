@@ -1,11 +1,7 @@
 // Reminder logic. Dozi is a static PWA with no server, so reminders can only
 // fire while the app is open or kept alive in the background by the browser.
-import { takenTodayQ } from './store.js';
-
-const pad = (n) => String(n).padStart(2, '0');
-
-export const hhmm = (now) => `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-export const dayKey = (now) => `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+import { takenTodayQ, remainingQ } from './store.js';
+import { hhmm, dayKey } from './dates.js';
 
 export function parseTimes(values) {
   const valid = values.filter((v) => /^\d{2}:\d{2}$/.test(v));
@@ -20,6 +16,11 @@ export function pendingTimes(m, now = new Date()) {
   if (!passed.length) return [];
   return takenTodayQ(m, now) >= passed.length * m.dose ? [] : passed;
 }
+
+// Medicines with a passed reminder time and no matching dose yet, that still have pills left.
+export const dueMeds = (meds, now = new Date()) => (
+  meds.filter((m) => pendingTimes(m, now).length && remainingQ(m) > 0)
+);
 
 // Pending times that have not been announced with a notification today.
 export function unnotifiedTimes(m, now = new Date()) {
