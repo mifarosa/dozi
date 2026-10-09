@@ -20,11 +20,13 @@ Derleme adımı yok; herhangi bir statik sunucu yeterli:
 npx http-server -p 8080 .
 ```
 
-## Hatırlatma notları
-Dozi sunucusuz bir PWA olduğu için bildirimler uygulama açıkken ya da tarayıcı arka planda canlı tutarken gelir. Telefon uygulamayı tamamen kapatırsa bildirim gecikebilir.
+## Hatırlatma ve bildirimler
+İki katman var:
 
-## Yayınlama
-`.github/workflows/pages.yml`, `main` dalına push edilince siteyi GitHub Pages'e yayınlar. İlk seferde repo ayarlarında Settings → Pages → Source olarak "GitHub Actions" seçilmelidir.
+- **Cihaz içi:** Dozi açıkken ya da tarayıcı arka planda canlı tutarken, saati gelen ilaç için bildirim gösterir. Telefon uygulamayı kapatırsa gecikebilir. Ek kurulum gerekmez.
+- **Sunucu (isteğe bağlı):** Dozi kapalıyken de, tam saatinde bildirim gelir. Evdeki sürekli açık bir cihazda çalışan küçük bir servis gerekir: [`server/README.md`](server/README.md). Sunucu bildirimi açıkken cihaz içi hatırlatmalar susar, çift bildirim gelmez.
+
+İki katmanda da bugünkü doz alındıysa hatırlatma gelmez.
 
 ## Firebase yedeği kurulumu
 Firebase ayarı boşken uygulama yalnızca cihazda çalışır; giriş çubuğu görünmez.
@@ -49,6 +51,8 @@ Derleme yok; `js/` altındaki dosyalar tarayıcıda ES modülü olarak çalış�
 | `js/ui/` | Diyaloglar: ilaç formu, "ne içtin" formu, `+` seçim penceresi |
 | `js/reminderLoop.js`, `js/notifications.js` | Hatırlatma zamanlayıcısı ve bildirimler |
 | `js/cloudSync.js`, `js/cloud.js`, `js/sync.js` | Bulut yedeği: arayüz çubuğu, Firebase sarmalayıcı, birleştirme kararları |
+| `js/push.js`, `js/pushUi.js`, `js/push-config.js` | Sunucu bildirimleri: cihazı abone etme, bildirim çubuğu |
+| `server/` | Evdeki cihazda çalışan bildirim servisi (kendi `README.md`'si var) |
 | `js/store.js`, `js/reminders.js`, `js/history.js`, `js/dates.js`, `js/html.js` | Saf mantık ve yardımcılar (testlenir) |
 
 ## Test
