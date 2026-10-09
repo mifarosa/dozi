@@ -1,0 +1,17 @@
+# systemd unit. Edit User and the two paths, then:
+#   sudo cp dozi-notifier.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now dozi-notifier
+[Unit]
+Description=Dozi reminder notifications
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=/opt/dozi/server
+ExecStart=/usr/bin/node --env-file=/opt/dozi/server/.env src/index.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
