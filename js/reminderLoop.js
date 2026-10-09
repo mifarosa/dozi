@@ -25,7 +25,8 @@ function sendNotifications(now) {
 }
 
 export function checkReminders() {
-  if (canNotify()) sendNotifications(new Date());
+  // While server push is on the phone gets each reminder from the server; skip the local copy.
+  if (canNotify() && !state.pushActive) sendNotifications(new Date());
 
   // The banner depends on the clock. Redraw only when it changes, so a time typed
   // into the intake field is never wiped by the timer.

@@ -5,5 +5,14 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+
+    // One record per device that wants server reminders. The home server reads them
+    // with the Admin SDK, which is not subject to these rules.
+    match /pushSubs/{subId} {
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow read, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid
+                    && request.resource.data.uid == request.auth.uid;
+    }
   }
 }

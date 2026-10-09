@@ -8,6 +8,7 @@ import { initChooser } from './ui/chooser.js';
 import { initMedForm, openMedForm } from './ui/medForm.js';
 import { initExtraForm, openExtraForm } from './ui/extraForm.js';
 import { initCloudSync } from './cloudSync.js';
+import { initPushUi } from './pushUi.js';
 import { checkReminders, startReminderLoop } from './reminderLoop.js';
 
 const app = document.getElementById('app');
@@ -61,6 +62,7 @@ initMedForm();
 initExtraForm();
 // Registered before the render listener so a change is pushed first, then drawn.
 initCloudSync();
+initPushUi();
 on('commit', render);
 on('refresh', render);
 

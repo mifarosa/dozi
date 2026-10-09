@@ -410,3 +410,9 @@ input[type="time"]::-webkit-date-and-time-value {
 }
 /* Inside an alarm row the field shares the line with its remove button. */
 .time-row input[type="time"] { flex: 1 1 0; width: auto; margin-top: 0; }
+
+/* ---------- Notification bar ---------- */
+
+.push-bar { margin-top: -4px; }
+.push-bar span:first-child { flex: 1; min-width: 0; }
+.push-actions { display: flex; gap: 6px; flex: none; }

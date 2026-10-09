@@ -69,3 +69,24 @@ export async function pushData(uid, data, updatedAt) {
   const { db, fsMod } = await loadSdk();
   await fsMod.setDoc(fsMod.doc(db, 'users', uid), { meds: data.meds, extras: data.extras, updatedAt });
 }
+
+// ---- Push subscriptions ----------------------------------------------------
+// One document per device in the top-level "pushSubs" collection. The home server
+// reads them to know where to send reminders. The id is a hash of the endpoint,
+// so saving the same device twice updates one document.
+
+export async function savePushSub(id, data) {
+  const { db, fsMod } = await loadSdk();
+  await fsMod.setDoc(fsMod.doc(db, 'pushSubs', id), data, { merge: true });
+}
+
+export async function deletePushSub(id) {
+  const { db, fsMod } = await loadSdk();
+  await fsMod.deleteDoc(fsMod.doc(db, 'pushSubs', id));
+}
+
+// Asks the server to send this device a test notification.
+export async function requestPushTest(id) {
+  const { db, fsMod } = await loadSdk();
+  await fsMod.updateDoc(fsMod.doc(db, 'pushSubs', id), { testAt: Date.now() });
+}

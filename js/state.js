@@ -13,11 +13,13 @@ export const state = {
   openId: null, // id of the medicine shown in the detail view
   calMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   selectedDay: null, // 'YYYY-MM-DD' or null for the whole month
+  user: null, // { uid, email } while signed in to the cloud
+  pushActive: false, // this device gets reminders from the server, so local ones are skipped
 };
 
-const listeners = { commit: [], refresh: [] };
+const listeners = { commit: [], refresh: [], user: [] };
 
-// event: 'commit' (data changed and was saved) or 'refresh' (redraw only).
+// event: 'commit' (data changed and was saved), 'refresh' (redraw only) or 'user' (sign-in changed).
 export function on(event, fn) {
   listeners[event].push(fn);
 }
@@ -36,6 +38,11 @@ export function commit() {
   saveExtras(state.extras);
   setMeta({ updatedAt: Date.now() });
   listeners.commit.forEach((fn) => fn());
+}
+
+export function setUser(user) {
+  state.user = user;
+  listeners.user.forEach((fn) => fn());
 }
 
 export function refresh() {

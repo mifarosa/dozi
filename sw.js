@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump CACHE when shipping changes.
-const CACHE = 'dozi-v9';
+const CACHE = 'dozi-v10';
 const ASSETS = [
   './',
   'index.html',
@@ -12,6 +12,9 @@ const ASSETS = [
   'js/notifications.js',
   'js/reminderLoop.js',
   'js/cloudSync.js',
+  'js/push.js',
+  'js/pushUi.js',
+  'js/push-config.js',
   'js/actions.js',
   'js/views/pills.js',
   'js/views/list.js',
@@ -65,6 +68,24 @@ self.addEventListener('notificationclick', (e) => {
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
       const open = wins[0];
       return open ? open.focus() : self.clients.openWindow('./');
+    }),
+  );
+});
+
+// A reminder pushed by the home server. The browser requires every push to show a notification.
+self.addEventListener('push', (e) => {
+  let data = {};
+  try {
+    data = e.data ? e.data.json() : {};
+  } catch {
+    data = { body: e.data ? e.data.text() : '' };
+  }
+  e.waitUntil(
+    self.registration.showNotification(data.title || 'Dozi', {
+      body: data.body || '',
+      icon: 'icons/icon-192.png',
+      badge: 'icons/icon-192.png',
+      tag: data.tag || 'dozi',
     }),
   );
 });
