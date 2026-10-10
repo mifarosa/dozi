@@ -13,7 +13,12 @@ const minutes = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5
 // Medicine copy whose timestamps are shifted into the user's wall clock.
 function inWall(med, timeZone) {
   const m = normalizeMed(med);
-  return { ...m, log: m.log.map((e) => ({ ...e, t: toWall(e.t, timeZone) })) };
+  // boxStart is a timestamp too; it must be shifted with the log or boxes would split at the wrong moment.
+  return {
+    ...m,
+    boxStart: m.boxStart ? toWall(m.boxStart, timeZone) : 0,
+    log: m.log.map((e) => ({ ...e, t: toWall(e.t, timeZone) })),
+  };
 }
 
 export function wallDayKey(wallMs) {

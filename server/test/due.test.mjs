@@ -81,3 +81,30 @@ test('an unknown time zone falls back to Istanbul instead of crashing', () => {
 test('pills left of a partly used medicine are still reminded', () => {
   assert.equal(due([med({ startQ: 39 })], '2026-10-07T08:05:00').length, 1); // one quarter left
 });
+
+test('a new box brings reminders back; an emptied one stays quiet until it is replaced', () => {
+  // one blister of 4 pills, one a day; the box was emptied on Oct 4th at 08:00
+  const base = { blisters: 1, perBlister: 4, startQ: 0 };
+  const log = [1, 2, 3, 4].map((d) => ({ t: ist(`2026-10-0${d}T08:00:00`), q: 4 }));
+  const emptied = med({ ...base, log });
+  assert.equal(due([emptied], '2026-10-05T08:05:00').length, 0);
+  // a new box opened right after the last pill, today's dose not taken yet
+  const next = med({ ...base, blisters: 2, log, boxStart: ist('2026-10-04T08:00:00') + 1 });
+  assert.equal(due([next], '2026-10-05T08:05:00').length, 1);
+  // today's dose already taken in the new box
+  const taken = { ...next, log: [...log, { t: ist('2026-10-05T07:50:00'), q: 4 }] };
+  assert.equal(due([taken], '2026-10-05T08:05:00').length, 0);
+});
+
+test('boxStart is judged on the user\'s wall clock, not in UTC', () => {
+  // The new box starts at 00:30 Istanbul time on the 5th (= 21:30 UTC on the 4th).
+  // A dose logged at 00:10 Istanbul on the 5th is still part of the old box, but it was
+  // taken today, so today's reminder must stay quiet.
+  const log = [
+    { t: ist('2026-10-04T08:00:00'), q: 8 }, { t: ist('2026-10-05T00:10:00'), q: 8 },
+  ];
+  const m = med({ blisters: 1, perBlister: 4, startQ: 0, log, boxStart: ist('2026-10-05T00:30:00'), times: ['08:00'] });
+  assert.equal(due([m], '2026-10-05T08:05:00').length, 0, 'the 00:10 dose already covers today');
+  const m2 = { ...m, log: [log[0]] };
+  assert.equal(due([m2], '2026-10-05T08:05:00').length, 1);
+});

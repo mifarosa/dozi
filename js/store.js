@@ -63,7 +63,9 @@ export function saveMeta(meta) {
 }
 
 // Older saved data has no reminder fields, so fill in defaults.
-export const normalizeMed = (m) => ({ times: [], fired: {}, log: [], ...m });
+export const normalizeMed = (m) => ({
+  times: [], fired: {}, log: [], boxStart: 0, boxes: [], ...m,
+});
 
 export function newId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -71,8 +73,11 @@ export function newId() {
 
 export const totalQ = (m) => m.blisters * m.perBlister * QUARTERS;
 
+// Only intakes since the current box was opened use up its pills. Older ones stay in the
+// history (calendar, charts) but belong to earlier boxes. boxStart 0 = the first box.
 export function consumedQ(m) {
-  const logged = m.log.reduce((sum, e) => sum + e.q, 0);
+  const since = m.boxStart || 0;
+  const logged = m.log.reduce((sum, e) => (e.t >= since ? sum + e.q : sum), 0);
   return Math.min(totalQ(m), m.startQ + logged);
 }
 
