@@ -9,10 +9,12 @@
   --pill-empty: #dbe7e5;
   --danger: #b42318;
   --line: #d5e2df;
-  --kind-med: #0f766e;
-  --kind-supplement: #f59e0b;
-  --kind-tea: #65a30d;
-  --kind-other: #64748b;
+  /* Validated with the data-viz palette check (all pairs, light and dark). "Other" is a neutral
+     gray with its own shape, outside the categorical set. */
+  --kind-med: #2a78d6;
+  --kind-supplement: #eb6834;
+  --kind-tea: #1baf7a;
+  --kind-other: #6b7280;
   --coffee: #ffdd00;
 }
 
@@ -28,10 +30,10 @@
     --pill-empty: #243a37;
     --danger: #f97066;
     --line: #27403c;
-    --kind-med: #2dd4bf;
-    --kind-supplement: #fbbf24;
-    --kind-tea: #a3e635;
-    --kind-other: #94a3b8;
+    --kind-med: #3987e5;
+    --kind-supplement: #d95926;
+    --kind-tea: #199e70;
+    --kind-other: #9aa5a3;
   }
 }
 
@@ -159,6 +161,8 @@ dialog {
 dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
 dialog h2 { margin-top: 0; }
 label { display: block; margin-bottom: 12px; font-size: 0.9rem; color: var(--muted); }
+/* One fixed height, so a select, a number and a time field line up side by side. */
+input:not([type="checkbox"]), select { height: 44px; }
 input, select {
   display: block;
   font-size: 16px;
@@ -215,6 +219,8 @@ legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
 /* ---------- Form layout ---------- */
 
 .grid2 > * { min-width: 0; }
+/* When two labels wrap to different line counts, keep the inputs on one line. */
+.grid2 > label { display: flex; flex-direction: column; justify-content: flex-end; }
 
 .actions.sticky {
   position: sticky;
@@ -271,12 +277,16 @@ legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
 .cal-day.has { background: color-mix(in srgb, var(--brand) 16%, var(--pill-empty)); }
 .cal-day.is-today { outline: 2px solid var(--text); outline-offset: -2px; font-weight: 700; }
 .cal-day.selected { background: var(--brand); color: #fff; }
-.cal-day .dots { display: flex; gap: 3px; height: 6px; }
-.cal-day .dots i, .cal-legend i { width: 6px; height: 6px; border-radius: 50%; display: block; }
+.cal-day .dots { display: flex; gap: 3px; height: 7px; }
+.cal-day .dots i, .cal-legend i { width: 7px; height: 7px; border-radius: 50%; display: block; }
 .dot-med { background: var(--kind-med); }
 .dot-supplement { background: var(--kind-supplement); }
 .dot-tea { background: var(--kind-tea); }
 .dot-other { background: var(--kind-other); }
+/* A second channel besides color, so the kinds also differ by shape. */
+.dot-supplement { border-radius: 1px !important; }
+.dot-tea { border-radius: 1px !important; transform: rotate(45deg) scale(0.85); }
+.dot-other { border-radius: 0 !important; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 .cal-day.selected .dots i { background: #fff; }
 
 .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 0.75rem; color: var(--muted); }
@@ -359,6 +369,9 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 button, a, .cal-day, .tab, input, select, label { touch-action: manipulation; }
 input, select, textarea { font-size: max(16px, 1rem); }
 
+/* A class that sets `display` must never win over the hidden attribute. */
+[hidden] { display: none !important; }
+
 /* ---------- Add chooser ---------- */
 
 #choose-dialog h2 { margin-top: 0; }
@@ -410,3 +423,46 @@ input[type="time"]::-webkit-date-and-time-value {
 }
 /* Inside an alarm row the field shares the line with its remove button. */
 .time-row input[type="time"] { flex: 1 1 0; width: auto; margin-top: 0; }
+
+/* ---------- Notification bar ---------- */
+
+.push-bar { margin-top: -4px; }
+.push-bar span:first-child { flex: 1; min-width: 0; }
+.push-actions { display: flex; gap: 6px; flex: none; }
+
+/* ---------- Time-of-day chart ---------- */
+
+.chart-card { padding: 12px; }
+.chart-card .section-title { margin: 0 0 2px; text-transform: none; }
+.chart-card .med-sub { margin: 0 0 8px; }
+.tc { width: 100%; height: auto; display: block; }
+.tc-grid { stroke: var(--line); stroke-width: 1; }
+.tc-axis { fill: var(--muted); font-size: 9px; }
+.tc-day { fill: var(--muted); font-size: 10px; text-anchor: end; }
+.tc-row { cursor: pointer; outline: none; }
+.tc-row.is-today .tc-day { fill: var(--text); font-weight: 700; }
+.tc-band { fill: var(--pill-empty); opacity: 0.35; }
+.tc-hit { fill: transparent; }
+.tc-row.sel .tc-hit { fill: color-mix(in srgb, var(--brand) 16%, transparent); }
+.tc-row:focus-visible .tc-hit { stroke: var(--text); stroke-width: 2; }
+.tc-plan { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+/* A 2px ring in the surface color keeps overlapping marks apart. */
+.tc-mark { stroke: var(--card); stroke-width: 2; paint-order: stroke; stroke-linejoin: round; }
+.tc-med { fill: var(--kind-med); }
+.tc-supplement { fill: var(--kind-supplement); }
+.tc-tea { fill: var(--kind-tea); }
+.tc-other { fill: var(--kind-other); }
+.tc-legend { margin-top: 8px; }
+.lg { width: 12px; height: 12px; overflow: visible; }
+.lg .tc-plan { opacity: 0.9; }
+
+/* ---------- New box, late entries ---------- */
+
+.newbox { border-color: var(--brand); }
+.newbox p { margin: 0 0 10px; }
+.newbox .row { display: flex; flex-wrap: wrap; gap: 8px; }
+.backfill-btn, .add-day { margin-top: 10px; }
+.add-day { display: block; }
+label.check { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 1rem; margin: 4px 0 12px; }
+label.check input { width: 22px; height: 22px; margin: 0; flex: none; accent-color: var(--brand); }
+.actions { flex-wrap: wrap; }

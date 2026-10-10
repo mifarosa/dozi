@@ -17,6 +17,8 @@ export function startOfWeek(d) {
   return addDays(day, -((day.getDay() + 6) % 7));
 }
 
+export const DAY_NAMES = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
 const timeFmt = new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' });
 export const monthFmt = new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' });
 export const dayFmt = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });

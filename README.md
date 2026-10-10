@@ -8,6 +8,9 @@
 - Blister gözleriyle görsel takip, kalan hap ve tahmini bitiş günü
 - "Aldım" butonu, tek seferlik ¼ / ½ / 1 seçenekleri ve geri alma
 - Hatırlatma saatleri (ilaç başına en fazla 6): saat geçtiği halde doz alınmadıysa bildirim ve ana ekranda uyarı
+- Unutulan doz: geçmiş bir güne ilaç ekleme (ilaç ekranından, takvimde seçili günden ya da `+` ile)
+- Kutu bitince yeni kutuya geçme: kutu dün (ya da daha önce) bittiyse uygulama "bugün içtin mi?" diye sorar, evet derse yeni kutuyu açıp bugünkü dozu da kaydeder. Eski kutuların alışları geçmişte kalır
+- Saat çizelgesi: her satır bir gün, noktalar o gün kaçta ne aldığını gösterir (takvimde ay, ilaç ekranında son 14 gün ve hatırlatma saatleri)
 - Takvim: ay görünümü, günlere göre ilaç ve içecek kayıtları, saatleriyle liste, kayıt silme
 - Ek kayıtlar: sağ üstteki + tuşu "Düzenli ilaç" ya da "Günlük kayıt" seçtirir; vitamin, takviye, bitki çayı gibi şeyler hazır ve son kullanılan önerilerle, istenirse geçmiş bir güne kaydedilir
 - İsteğe bağlı Firebase yedeği: Google ile giriş yapınca veriler Firestore'a yedeklenir, cihazlar arası senkronize olur
@@ -20,11 +23,13 @@ Derleme adımı yok; herhangi bir statik sunucu yeterli:
 npx http-server -p 8080 .
 ```
 
-## Hatırlatma notları
-Dozi sunucusuz bir PWA olduğu için bildirimler uygulama açıkken ya da tarayıcı arka planda canlı tutarken gelir. Telefon uygulamayı tamamen kapatırsa bildirim gecikebilir.
+## Hatırlatma ve bildirimler
+İki katman var:
 
-## Yayınlama
-`.github/workflows/pages.yml`, `main` dalına push edilince siteyi GitHub Pages'e yayınlar. İlk seferde repo ayarlarında Settings → Pages → Source olarak "GitHub Actions" seçilmelidir.
+- **Cihaz içi:** Dozi açıkken ya da tarayıcı arka planda canlı tutarken, saati gelen ilaç için bildirim gösterir. Telefon uygulamayı kapatırsa gecikebilir. Ek kurulum gerekmez.
+- **Sunucu (isteğe bağlı):** Dozi kapalıyken de, tam saatinde bildirim gelir. Evdeki sürekli açık bir cihazda çalışan küçük bir servis gerekir: [`server/README.md`](server/README.md). Sunucu bildirimi açıkken cihaz içi hatırlatmalar susar, çift bildirim gelmez.
+
+İki katmanda da bugünkü doz alındıysa hatırlatma gelmez.
 
 ## Firebase yedeği kurulumu
 Firebase ayarı boşken uygulama yalnızca cihazda çalışır; giriş çubuğu görünmez.
@@ -49,7 +54,11 @@ Derleme yok; `js/` altındaki dosyalar tarayıcıda ES modülü olarak çalış�
 | `js/ui/` | Diyaloglar: ilaç formu, "ne içtin" formu, `+` seçim penceresi |
 | `js/reminderLoop.js`, `js/notifications.js` | Hatırlatma zamanlayıcısı ve bildirimler |
 | `js/cloudSync.js`, `js/cloud.js`, `js/sync.js` | Bulut yedeği: arayüz çubuğu, Firebase sarmalayıcı, birleştirme kararları |
+| `js/push.js`, `js/pushUi.js`, `js/push-config.js` | Sunucu bildirimleri: cihazı abone etme, bildirim çubuğu |
+| `server/` | Evdeki cihazda çalışan bildirim servisi (kendi `README.md`'si var) |
 | `js/store.js`, `js/reminders.js`, `js/history.js`, `js/dates.js`, `js/html.js` | Saf mantık ve yardımcılar (testlenir) |
+| `js/boxes.js`, `js/timeline.js` | Kutu geçişi ve unutulan doz mantığı; çizelge verisi (testlenir) |
+| `js/views/timeChart.js` | Saat çizelgesi çizimi (şekil + renk, erişilebilir satırlar) |
 
 ## Test
 ```sh

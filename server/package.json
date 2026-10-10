@@ -1,0 +1,16 @@
+{
+  "name": "dozi-notifier",
+  "private": true,
+  "type": "module",
+  "description": "Sends Dozi reminder push notifications from an always-on machine.",
+  "engines": { "node": ">=20.6" },
+  "scripts": {
+    "start": "node --env-file=.env src/index.js",
+    "test": "node --test \"test/*.test.mjs\"",
+    "vapid": "web-push generate-vapid-keys"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0",
+    "web-push": "^3.6.7"
+  }
+}

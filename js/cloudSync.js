@@ -1,12 +1,13 @@
 // Cloud backup: the bar at the top, pushing local changes and applying the cloud copy.
 // cloud.js wraps the Firebase SDK; sync.js decides what to do; this wires them to the app.
 import {
-  state, on, commit, refresh, setMeta, replaceData,
+  state, on, commit, refresh, setMeta, replaceData, setUser,
 } from './state.js';
 import { normalizeMed } from './store.js';
 import { decideSync, mergeMeds, mergeExtras } from './sync.js';
 import { esc } from './html.js';
 import * as cloud from './cloud.js';
+import { pushConfigured, disablePush } from './push.js';
 
 const bar = document.getElementById('cloud-bar');
 
@@ -78,7 +79,11 @@ export function initCloudSync() {
     const action = e.target.closest('button')?.dataset.cloud;
     try {
       if (action === 'in') await cloud.signIn();
-      if (action === 'out') await cloud.signOut();
+      if (action === 'out') {
+        // A signed-out phone must not keep receiving this account's reminders.
+        if (pushConfigured) await disablePush().catch(() => {});
+        await cloud.signOut();
+      }
     } catch {
       setStatus('giriş yapılamadı');
     }
@@ -90,6 +95,7 @@ export function initCloudSync() {
       user = next;
       status = next ? 'bağlanıyor' : '';
       renderBar();
+      setUser(next);
     },
     onRemote: applyRemote,
     onError() {

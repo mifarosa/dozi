@@ -4,11 +4,11 @@ import {
   KIND_LABELS, buildEntries, groupByDay, dayKinds, monthEntries,
 } from '../history.js';
 import {
-  dayKey, addDays, startOfWeek, dayFmt, monthFmt, formatTime,
+  dayKey, addDays, startOfWeek, dayFmt, monthFmt, formatTime, DAY_NAMES,
 } from '../dates.js';
 import { esc } from '../html.js';
-
-const DAY_NAMES = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+import { monthRows, hasMarks } from '../timeline.js';
+import { timeChartHtml } from './timeChart.js';
 
 function entryRowHtml(e) {
   const removeAttr = e.medId ? `data-remove-med="${esc(e.medId)}"` : `data-remove-extra="${esc(e.extraId)}"`;
@@ -24,6 +24,9 @@ function dayHeading(e, list) {
   const first = list.find((x) => x.key === e.key);
   return first === e ? `<h3 class="day-heading">${dayFmt.format(new Date(e.t))}</h3>` : '';
 }
+
+// A forgotten dose can be added to any day up to today, when there is a medicine to add it to.
+const canBackfill = (day, now) => Boolean(day) && day <= dayKey(now) && state.meds.length > 0;
 
 function gridHtml(byDay, now) {
   const { calMonth, selectedDay } = state;
@@ -46,6 +49,26 @@ function gridHtml(byDay, now) {
     }
   }
   return grid;
+}
+
+// Hour-of-day chart for the visible month, covering medicines and drinks alike.
+function chartCardHtml(entries, now) {
+  const { calMonth, selectedDay } = state;
+  const rows = monthRows(entries, calMonth.getFullYear(), calMonth.getMonth(), now);
+  const body = hasMarks(rows)
+    ? timeChartHtml({
+      rows,
+      selectedDay,
+      todayKey: dayKey(now),
+      kinds: Object.keys(KIND_LABELS),
+      label: `Saat çizelgesi, ${monthFmt.format(calMonth)}`,
+    })
+    : '<p class="empty-note">Bu ay çizelge için kayıt yok.</p>';
+  return `<section class="card chart-card">
+      <h2 class="section-title">Saat çizelgesi</h2>
+      <p class="med-sub">Her satır bir gün, noktalar o gün kaçta kaydettiğini gösterir. Bir güne dokun.</p>
+      ${body}
+    </section>`;
 }
 
 export function calendarHtml() {
@@ -76,10 +99,13 @@ export function calendarHtml() {
       <p class="cal-summary">${monthList.length ? `<b>${monthList.length}</b> kayıt · <b>${days}</b> gün` : 'Bu ay henüz kayıt yok.'}</p>
     </section>
 
+    ${chartCardHtml(entries, now)}
+
     <div class="list-head">
       <h2 class="section-title">${title}</h2>
       ${selectedDay ? '<button type="button" class="chip" data-cal="all">Tüm ay</button>' : ''}
     </div>
+    ${canBackfill(selectedDay, now) ? `<button type="button" class="btn ghost small add-day" data-backfill-day="${selectedDay}">Bu güne doz ekle</button>` : ''}
     ${shown.length ? shown.map((e) => (selectedDay ? '' : dayHeading(e, shown)) + entryRowHtml(e)).join('')
       : `<p class="empty-note">${entries.length ? 'Bu tarihte kayıt yok.' : 'Henüz kayıt yok. İlaç aldığında ya da bir şey içtiğinde burada görünür.'}</p>`}`;
 }
