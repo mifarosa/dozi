@@ -56,6 +56,10 @@
       <strong>Günlük kayıt</strong>
       <span>Vitamin, bitki çayı gibi bir şey içtim</span>
     </button>
+    <button type="button" class="choice" id="choose-backfill" data-choose="backfill">
+      <strong>Unutulan doz</strong>
+      <span>Geçmiş bir güne ilaç ekle</span>
+    </button>
     <div class="actions">
       <button type="button" id="choose-cancel" class="btn ghost">Vazgeç</button>
     </div>
@@ -125,6 +129,67 @@
       <div class="actions sticky">
         <button type="button" id="form-cancel" class="btn ghost">Vazgeç</button>
         <button type="submit" class="btn primary">Kaydet</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="backfill-dialog">
+    <form id="backfill-form" method="dialog">
+      <h2>Unutulan dozu ekle</h2>
+
+      <label>İlaç
+        <select name="med"></select>
+      </label>
+      <label>Gün
+        <input name="date" type="date" required>
+      </label>
+      <label>Saat
+        <input name="time" type="time" required>
+      </label>
+      <label>Miktar
+        <select name="q">
+          <option value="1">&#188; hap</option>
+          <option value="2">Yarım hap</option>
+          <option value="4">1 hap</option>
+          <option value="6">1,5 hap</option>
+          <option value="8">2 hap</option>
+        </select>
+      </label>
+
+      <p id="backfill-error" class="error" hidden></p>
+
+      <div class="actions sticky">
+        <button type="button" id="backfill-cancel" class="btn ghost">Vazgeç</button>
+        <button type="submit" class="btn primary">Ekle</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="newbox-dialog">
+    <form id="newbox-form" method="dialog">
+      <h2>Yeni kutu</h2>
+      <p id="newbox-note" class="hint"></p>
+
+      <div class="grid2">
+        <label>Kutuda kaç blister?
+          <input name="blisters" type="number" min="1" max="50" required inputmode="numeric">
+        </label>
+        <label>Blisterde kaç hap?
+          <input name="perBlister" type="number" min="1" max="100" required inputmode="numeric">
+        </label>
+      </div>
+
+      <label class="check">
+        <input name="took" type="checkbox">
+        <span id="newbox-took-label">Bugünkü dozu içtim</span>
+      </label>
+      <label id="newbox-time-row" hidden>Saat
+        <input name="time" type="time">
+      </label>
+
+      <div class="actions sticky">
+        <button type="button" id="newbox-cancel" class="btn ghost">Vazgeç</button>
+        <button type="submit" class="btn primary">Yeni kutuya geç</button>
       </div>
     </form>
   </dialog>

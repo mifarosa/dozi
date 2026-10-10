@@ -82,11 +82,12 @@ function save(fields) {
     return;
   }
   const m = findMed(editingId);
-  // Keep the intake history (and today's count) unless the position itself changed.
+  // A changed position becomes the new baseline from now on. The intake history stays
+  // (calendar, charts); intakes before this moment just stop counting against the box.
   const positionChanged = fields.startQ !== consumedQ(m);
-  const log = positionChanged ? [] : m.log;
   const startQ = positionChanged ? fields.startQ : m.startQ;
-  Object.assign(m, fields, { startQ, log });
+  const boxStart = positionChanged ? Date.now() : m.boxStart;
+  Object.assign(m, fields, { startQ, boxStart });
 }
 
 export function initMedForm() {

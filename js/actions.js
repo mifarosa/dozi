@@ -5,6 +5,9 @@ import {
 import { remainingQ } from './store.js';
 import { resolveTakeTime, dayComplete } from './reminders.js';
 import { openMedForm } from './ui/medForm.js';
+import { openBackfill } from './ui/backfillForm.js';
+import { openNewBox } from './ui/newBoxForm.js';
+import { dayKey } from './dates.js';
 
 function take(m, q) {
   const amount = Math.min(q, remainingQ(m));
@@ -52,6 +55,14 @@ function deleteMed(m) {
   commit();
 }
 
+// "Daha sonra": do not ask about this medicine's new box again today.
+function askLater(id) {
+  const m = findMed(id);
+  if (!m) return;
+  m.askedBox = dayKey(new Date());
+  commit();
+}
+
 // Checked in this order; the first data-* attribute found on the button wins.
 // `m` is the medicine on screen, only needed by the detail screen's buttons.
 const HANDLERS = [
@@ -59,6 +70,10 @@ const HANDLERS = [
   ['cal', (btn) => moveMonth(btn.dataset.cal)],
   ['removeExtra', (btn) => removeExtra(btn.dataset.removeExtra)],
   ['removeMed', (btn) => removeIntake(btn.dataset.removeMed, Number(btn.dataset.t))],
+  ['backfill', (btn) => openBackfill({ medId: btn.dataset.backfill })],
+  ['backfillDay', (btn) => openBackfill({ date: btn.dataset.backfillDay })],
+  ['newbox', (btn) => openNewBox(btn.dataset.newbox)],
+  ['newboxLater', (btn) => askLater(btn.dataset.newboxLater)],
   ['open', (btn) => { state.openId = btn.dataset.open; refresh(); }],
   ['take', (btn, m) => m && take(m, Number(btn.dataset.take))],
   ['undo', (btn, m) => { if (m) { m.log.pop(); commit(); } }],
@@ -67,7 +82,8 @@ const HANDLERS = [
 ];
 
 export function handleAppClick(e) {
-  const btn = e.target.closest('button');
+  // Chart rows are SVG groups with data-day, not buttons.
+  const btn = e.target.closest('button, [data-day]');
   if (!btn) return;
   const m = currentMed();
   const found = HANDLERS.find(([key]) => key in btn.dataset);
