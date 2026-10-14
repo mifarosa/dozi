@@ -41,6 +41,20 @@ export function monthRows(entries, year, month, now = new Date(), planned = []) 
   return rows;
 }
 
+// One week from its Monday, oldest first, stopping at today: days that have not happened
+// yet carry nothing.
+export function weekRows(entries, start, now = new Date(), planned = []) {
+  const byDay = groupByKey(entries);
+  const today = startOfDay(now);
+  const rows = [];
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(start, i);
+    if (d > today) break;
+    rows.push(rowFor(d, byDay, planned));
+  }
+  return rows;
+}
+
 // The last `days` days ending today, oldest first.
 export function lastDaysRows(entries, days, now = new Date(), planned = []) {
   const byDay = groupByKey(entries);
