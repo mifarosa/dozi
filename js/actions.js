@@ -1,7 +1,9 @@
 // Click handling for everything drawn inside #app, driven by data-* attributes.
 import {
-  state, commit, refresh, findMed, currentMed,
+  state, commit, refresh, findMed, currentMed, showDay,
 } from './state.js';
+import { resolveWeek, shiftWeek, monthOfWeek, storedWeek } from './week.js';
+import { startOfWeek } from './dates.js';
 import { remainingQ } from './store.js';
 import { resolveTakeTime, dayComplete } from './reminders.js';
 import { openMedForm } from './ui/medForm.js';
@@ -19,16 +21,38 @@ function take(m, q) {
   commit();
 }
 
+// Tapping the open day again closes it.
 function selectDay(day) {
-  state.selectedDay = state.selectedDay === day ? null : day;
-  const d = new Date(`${day}T12:00:00`);
-  if (d.getMonth() !== state.calMonth.getMonth()) state.calMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+  if (state.selectedDay === day) state.selectedDay = null;
+  else showDay(day);
   refresh();
 }
 
+// Another month in the grid. The list below follows: this week for the current month,
+// otherwise the last week of that month (the most recent days of it).
 function moveMonth(direction) {
   const step = { prev: -1, next: 1 }[direction];
-  if (step) state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() + step, 1);
+  const month = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth() + step, 1);
+  const now = new Date();
+  state.calMonth = month;
+  state.selectedDay = null;
+  const isCurrent = month.getFullYear() === now.getFullYear() && month.getMonth() === now.getMonth();
+  state.weekStart = isCurrent ? null : storedWeek(startOfWeek(new Date(month.getFullYear(), month.getMonth() + 1, 0)), now);
+  refresh();
+}
+
+// Previous or next week; the next one stops at this week.
+function moveWeek(direction) {
+  const next = shiftWeek(state.weekStart, { prev: -1, next: 1 }[direction], new Date());
+  if (next === undefined) return;
+  state.weekStart = next;
+  state.selectedDay = null;
+  state.calMonth = monthOfWeek(resolveWeek(next).start);
+  refresh();
+}
+
+// Close the open day and go back to the week list.
+function closeDay() {
   state.selectedDay = null;
   refresh();
 }
@@ -67,7 +91,8 @@ function askLater(id) {
 // `m` is the medicine on screen, only needed by the detail screen's buttons.
 const HANDLERS = [
   ['day', (btn) => selectDay(btn.dataset.day)],
-  ['cal', (btn) => moveMonth(btn.dataset.cal)],
+  ['cal', (btn) => (btn.dataset.cal === 'week' ? closeDay() : moveMonth(btn.dataset.cal))],
+  ['week', (btn) => moveWeek(btn.dataset.week)],
   ['removeExtra', (btn) => removeExtra(btn.dataset.removeExtra)],
   ['removeMed', (btn) => removeIntake(btn.dataset.removeMed, Number(btn.dataset.t))],
   ['backfill', (btn) => openBackfill({ medId: btn.dataset.backfill })],

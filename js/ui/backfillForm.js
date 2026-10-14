@@ -1,5 +1,5 @@
 // "Add a forgotten dose": pick the medicine, the day and the time.
-import { state, findMed, commit } from '../state.js';
+import { state, findMed, commit, showDay } from '../state.js';
 import { backfillEntry } from '../boxes.js';
 import { dayKey, startOfDay, addDays } from '../dates.js';
 import { esc } from '../html.js';
@@ -45,11 +45,7 @@ export function initBackfillForm() {
     }
     m.log.push(entry);
     // From the calendar, show the day that was just filled in.
-    if (state.view === 'calendar') {
-      const d = new Date(entry.t);
-      state.selectedDay = dayKey(d);
-      state.calMonth = new Date(d.getFullYear(), d.getMonth(), 1);
-    }
+    if (state.view === 'calendar') showDay(dayKey(new Date(entry.t)));
     dialog.close();
     commit();
   });

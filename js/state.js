@@ -4,6 +4,7 @@
 import {
   load, save, loadExtras, saveExtras, loadMeta, saveMeta, normalizeMed,
 } from './store.js';
+import { storedWeek } from './week.js';
 
 export const state = {
   meds: load().map(normalizeMed),
@@ -12,7 +13,8 @@ export const state = {
   view: 'meds', // 'meds' | 'calendar'
   openId: null, // id of the medicine shown in the detail view
   calMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-  selectedDay: null, // 'YYYY-MM-DD' or null for the whole month
+  selectedDay: null, // 'YYYY-MM-DD' of the day opened below the calendar, or null
+  weekStart: null, // Monday of the week listed below the calendar; null = this week
   user: null, // { uid, email } while signed in to the cloud
   pushActive: false, // this device gets reminders from the server, so local ones are skipped
 };
@@ -26,6 +28,17 @@ export function on(event, fn) {
 
 export const findMed = (id) => state.meds.find((m) => m.id === id);
 export const currentMed = () => findMed(state.openId);
+
+// Open one day: select it and bring its week (and month) into view.
+export function showDay(key) {
+  state.selectedDay = key;
+  const date = new Date(`${key}T12:00:00`);
+  state.weekStart = storedWeek(date);
+  const month = state.calMonth;
+  if (date.getMonth() !== month.getMonth() || date.getFullYear() !== month.getFullYear()) {
+    state.calMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+}
 
 export function setMeta(patch) {
   state.meta = { ...state.meta, ...patch };
