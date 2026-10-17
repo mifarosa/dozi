@@ -2,7 +2,7 @@
 import { state, on } from './state.js';
 import {
   pushConfigured, pushStatus, readEnvironment, getSubscription, saveSubscription,
-  enablePush, disablePush, sendTest,
+  enablePush, disablePush, sendTest, friendlyPushError,
 } from './push.js';
 import { esc } from './html.js';
 
@@ -78,7 +78,8 @@ async function run(action) {
       setNote('Test istendi. Birkaç saniye içinde gelmezse sunucunun çalıştığını kontrol et.');
     }
   } catch (err) {
-    setNote(`Olmadı: ${err.message || 'bilinmeyen hata'}`);
+    console.error('Dozi push:', err);
+    setNote(friendlyPushError(err));
   } finally {
     busy = false;
     await update();

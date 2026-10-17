@@ -19,6 +19,18 @@ export async function subscriptionDocId(endpoint) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Plain-language text for a failed push action. Raw SDK messages ("Missing or insufficient
+// permissions", error codes) mean nothing to the user and look broken, so they stay in the console.
+export function friendlyPushError(err) {
+  const code = String(err?.code || '');
+  if (code.includes('permission-denied')) return 'Kayıt yapılamadı. Çıkış yapıp tekrar giriş yapmayı dene.';
+  if (code.includes('unavailable') || err?.name === 'NetworkError' || (typeof navigator !== 'undefined' && navigator.onLine === false)) {
+    return 'Bağlantı yok gibi görünüyor. İnternetini kontrol edip tekrar dene.';
+  }
+  if (err?.name === 'NotAllowedError') return 'Bildirim izni verilmedi.';
+  return 'Bir sorun oldu. Biraz sonra tekrar dene.';
+}
+
 // What the notification bar should show. Pure, so every case is testable.
 //   hidden | needs-install | unsupported | denied | ready | on
 export function pushStatus({
