@@ -14,7 +14,7 @@
 #   DOZI_SA_PATH      servis hesabı anahtarı (JSON) dosyasının yolu
 #   DOZI_NO_SYSTEMD=1 servis kurma, yalnızca hazırla
 #   DOZI_SKIP_CHECK=1 Firestore bağlantı denemesini atla
-#   Testler için: DOZI_SKIP_NPM=1, DOZI_NO_SUDO=1, DOZI_UNIT_PATH=<dosya>, DOZI_FORCE_NODE_INSTALL=1,
+#   Testler için: DOZI_MEMINFO=<dosya>, DOZI_SKIP_NPM=1, DOZI_NO_SUDO=1, DOZI_UNIT_PATH=<dosya>, DOZI_FORCE_NODE_INSTALL=1,
 #   DOZI_NODE_PREFIX, DOZI_NODE_BINDIR (bkz. server/test/install.test.mjs)
 set -euo pipefail
 
@@ -30,7 +30,7 @@ die()  { printf '\n\033[31mHata:\033[0m %s\n' "$*" >&2; exit 1; }
 # Yönetici yetkisi gereken komutlar: root isek doğrudan, değilsek sudo ile.
 as_root() {
   if [ "$(id -u)" -eq 0 ] || [ "${DOZI_NO_SUDO:-}" = 1 ]; then "$@"
-  elif command -v sudo >/dev/null 2>&1; then sudo -E "$@"
+  elif command -v sudo >/dev/null 2>&1; then sudo "$@"
   else die "Bu adım yönetici yetkisi ister ama sudo yok. Betiği root olarak çalıştır."
   fi
 }
@@ -145,12 +145,28 @@ SERVER="$ROOT/server"
 
 # ---------------------------------------------------------- 3) Bağımlılıklar
 say "3/6 Bağımlılıklar"
+SWAP_HELP='    sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+    echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab'
+MEMINFO=${DOZI_MEMINFO:-/proc/meminfo}
+MEM_KB=$(awk '/^MemTotal:/ {print $2}' "$MEMINFO" 2>/dev/null || true)
+SWAP_KB=$(awk '/^SwapTotal:/ {print $2}' "$MEMINFO" 2>/dev/null || true)
+if [ -n "${MEM_KB:-}" ] && [ "$MEM_KB" -lt 1500000 ] && [ "${SWAP_KB:-0}" -eq 0 ]; then
+  warn "Bellek az ($((MEM_KB / 1024)) MB) ve takas alanı (swap) yok. npm kurulumu bellek yetmezse \"Killed\" diye kesilebilir."
+  printf '    Kesilirse şunu çalıştırıp betiği tekrar çalıştır:\n%s\n' "$SWAP_HELP"
+fi
 if [ "${DOZI_SKIP_NPM:-}" = 1 ]; then
   warn "bağımlılık kurulumu atlandı (DOZI_SKIP_NPM=1)"
 else
-  ( cd "$SERVER" && { npm ci --omit=dev --no-audit --no-fund >/dev/null 2>&1 || npm install --omit=dev --no-audit --no-fund >/dev/null; } ) \
-    || die "npm install başarısız. İnternet bağlantısını kontrol et."
-  ok "kuruldu"
+  NPM_LOG=$(mktemp)
+  if ( cd "$SERVER" && { npm ci --omit=dev --no-audit --no-fund >"$NPM_LOG" 2>&1 || npm install --omit=dev --no-audit --no-fund >>"$NPM_LOG" 2>&1; } ); then
+    ok "kuruldu"
+  else
+    printf '\n--- npm çıktısının sonu ---\n'; tail -n 8 "$NPM_LOG"; printf -- '---------------------------\n'
+    rm -f "$NPM_LOG"
+    die "npm install başarısız. İnternet bağlantısını kontrol et. Çıktıda 'Killed' varsa bellek yetmemiştir: takas alanı ekleyip tekrar çalıştır:
+$SWAP_HELP"
+  fi
+  rm -f "$NPM_LOG"
 fi
 
 # ----------------------------------------------- 4) Firebase servis hesabı

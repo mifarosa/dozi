@@ -240,3 +240,34 @@ test('when nodejs.org cannot be reached it says so', opts, () => {
   assert.notEqual(r.code, 0);
   assert.match(r.out, /nodejs\.org'a ulaşılamadı/);
 });
+
+
+// ---- small machines (a 1 GB cloud VM) ----
+
+function meminfo(root, memKb, swapKb) {
+  const file = path.join(root, 'meminfo');
+  writeFileSync(file, `MemTotal:       ${memKb} kB\nMemFree:        100000 kB\nSwapTotal:      ${swapKb} kB\nSwapFree:       ${swapKb} kB\n`);
+  return file;
+}
+
+test('a small machine without swap is warned before npm runs, with the exact commands', opts, () => {
+  const root = sandbox();
+  const r = run(root, { DOZI_SA_PATH: fakeKey(root), DOZI_EMAIL: 'me@example.com', DOZI_MEMINFO: meminfo(root, 1006000, 0) });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /Bellek az \(\d+ MB\) ve takas alanı \(swap\) yok/);
+  assert.match(r.out, /fallocate -l 2G \/swapfile/);
+  assert.match(r.out, /\/etc\/fstab/);
+});
+
+test('no memory warning when there is enough memory or a swap file', opts, () => {
+  for (const [mem, swap] of [[4000000, 0], [1006000, 2097148]]) {
+    const root = sandbox();
+    const r = run(root, { DOZI_SA_PATH: fakeKey(root), DOZI_EMAIL: 'me@example.com', DOZI_MEMINFO: meminfo(root, mem, swap) });
+    assert.equal(r.code, 0, r.out);
+    assert.equal(/Bellek az/.test(r.out), false, `${mem}/${swap}`);
+  }
+});
+
+test('the installer never asks sudo to preserve the environment', opts, () => {
+  assert.equal(/sudo -E/.test(readFileSync(path.join(repo, 'server/install.sh'), 'utf8').replace(/#.*$/gm, '')), false);
+});
