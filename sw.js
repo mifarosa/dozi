@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump CACHE when shipping changes.
-const CACHE = 'dozi-v14';
+const CACHE = 'dozi-v16';
 const ASSETS = [
   './',
   'index.html',
@@ -18,12 +18,15 @@ const ASSETS = [
   'js/push.js',
   'js/pushUi.js',
   'js/push-config.js',
+  'js/prefs.js',
+  'js/settingsUi.js',
   'js/actions.js',
   'js/views/pills.js',
   'js/views/list.js',
   'js/views/detail.js',
   'js/views/calendar.js',
   'js/views/timeChart.js',
+  'js/views/settings.js',
   'js/ui/chooser.js',
   'js/ui/medForm.js',
   'js/ui/extraForm.js',

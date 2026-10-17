@@ -4,6 +4,7 @@ import { handleAppClick } from './actions.js';
 import { listHtml } from './views/list.js';
 import { detailHtml } from './views/detail.js';
 import { calendarHtml } from './views/calendar.js';
+import { settingsHtml } from './views/settings.js';
 import { initChooser } from './ui/chooser.js';
 import { initMedForm, openMedForm } from './ui/medForm.js';
 import { initExtraForm, openExtraForm } from './ui/extraForm.js';
@@ -11,6 +12,7 @@ import { initBackfillForm, openBackfill } from './ui/backfillForm.js';
 import { initNewBoxForm } from './ui/newBoxForm.js';
 import { initCloudSync } from './cloudSync.js';
 import { initPushUi } from './pushUi.js';
+import { initSettings, prefs } from './settingsUi.js';
 import { checkReminders, startReminderLoop } from './reminderLoop.js';
 
 const app = document.getElementById('app');
@@ -47,6 +49,10 @@ function render() {
     backBtn.hidden = true;
     addBtn.hidden = false;
     app.innerHTML = calendarHtml();
+  } else if (state.view === 'settings') {
+    backBtn.hidden = true;
+    addBtn.hidden = true;
+    app.innerHTML = settingsHtml(prefs);
   } else {
     backBtn.hidden = !m;
     addBtn.hidden = !!m;
@@ -84,6 +90,7 @@ initNewBoxForm();
 // Registered before the render listener so a change is pushed first, then drawn.
 initCloudSync();
 initPushUi();
+initSettings();
 on('commit', render);
 on('refresh', render);
 

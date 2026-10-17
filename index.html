@@ -13,6 +13,14 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Apply the saved theme before the first paint so a dark phone never flashes light.
+    try {
+      var p = JSON.parse(localStorage.getItem('dozi.prefs'));
+      if (p && /^(light|dark)$/.test(p.theme)) document.documentElement.setAttribute('data-theme', p.theme);
+      if (p && /^(blue|purple|rose|orange)$/.test(p.accent)) document.documentElement.setAttribute('data-accent', p.accent);
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <header class="topbar">
@@ -22,7 +30,6 @@
   </header>
 
   <div id="cloud-bar" class="cloud-bar" hidden></div>
-  <div id="push-bar" class="cloud-bar push-bar" hidden></div>
 
   <main>
     <div id="app"></div>
@@ -43,6 +50,10 @@
     <button class="tab" data-view="calendar">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
       <span>Takvim</span>
+    </button>
+    <button class="tab" data-view="settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg>
+      <span>Ayarlar</span>
     </button>
   </nav>
 

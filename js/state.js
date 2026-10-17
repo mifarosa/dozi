@@ -10,7 +10,7 @@ export const state = {
   meds: load().map(normalizeMed),
   extras: loadExtras(), // free-form drinks: vitamins, herbal teas, ...
   meta: loadMeta(), // { updatedAt, uid } for cloud sync
-  view: 'meds', // 'meds' | 'calendar'
+  view: 'meds', // 'meds' | 'calendar' | 'settings'
   openId: null, // id of the medicine shown in the detail view
   calMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   selectedDay: null, // 'YYYY-MM-DD' of the day opened below the calendar, or null
