@@ -133,3 +133,86 @@ test('old sent markers are pruned', async () => {
   await notifier.tick();
   assert.equal(Object.keys(getStore()).includes('u1|m1|08:00|2026-10-01'), false);
 });
+
+// ---- several people on one server ----
+
+// Two people whose medicines even share the same id and the same reminder time.
+function twoPeople() {
+  const net = [];
+  let nowMs = 0;
+  let store = {};
+  const notifier = createNotifier({
+    send: async (sub, payload) => { net.push({ to: sub.id, ...payload }); },
+    removeSub: async () => {},
+    loadSent: () => store,
+    saveSent: (o) => { store = { ...o }; },
+    now: () => nowMs,
+  });
+  const med = (name, over = {}) => ({
+    id: 'm1', name, blisters: 1, perBlister: 10, dose: 4, perDay: 1, startQ: 0, times: ['08:00'], fired: {}, log: [], ...over,
+  });
+  // Ayşe is in Istanbul with two phones; Kenji is in Tokyo with one. Both have a medicine "m1" at 08:00.
+  notifier.setUser('ayse', { meds: [med('Vitamin D')] });
+  notifier.setSub('ayse-iphone', { uid: 'ayse', tz: 'Europe/Istanbul', updatedAt: 1 });
+  notifier.setSub('ayse-tablet', { uid: 'ayse', tz: 'Europe/Istanbul', updatedAt: 2 });
+  notifier.setUser('kenji', { meds: [med('Metformin')] });
+  notifier.setSub('kenji-phone', { uid: 'kenji', tz: 'Asia/Tokyo', updatedAt: 1 });
+  // A person with a phone but no data yet, and one with data but no phone.
+  notifier.setSub('ghost-phone', { uid: 'ghost', tz: 'Europe/Istanbul', updatedAt: 1 });
+  notifier.setUser('nophone', { meds: [med('Nobody sees this')] });
+  return { notifier, net, setNow: (iso) => { nowMs = new Date(iso).getTime(); }, med };
+}
+
+test('each person is reminded about their own medicine, on their own devices, at their own 08:00', async () => {
+  const { notifier, net, setNow } = twoPeople();
+
+  setNow('2026-10-07T08:00:20+03:00'); // 08:00 in Istanbul, 14:00 in Tokyo
+  assert.equal((await notifier.tick()).sent, 1);
+  assert.deepEqual(net.map((p) => [p.to, p.title]).sort(), [['ayse-iphone', 'Vitamin D zamanı'], ['ayse-tablet', 'Vitamin D zamanı']]);
+
+  net.length = 0;
+  setNow('2026-10-07T08:00:20+09:00'); // 08:00 in Tokyo, 02:00 in Istanbul
+  assert.equal((await notifier.tick()).sent, 1);
+  assert.deepEqual(net.map((p) => [p.to, p.title]), [['kenji-phone', 'Metformin zamanı']]);
+});
+
+test('the same medicine id and time for two people never merge into one "already sent"', async () => {
+  const { notifier, net, setNow } = twoPeople();
+  // 08:00 in both zones is 5 hours apart, so send both in turn and check neither blocks the other.
+  setNow('2026-10-07T08:00:20+03:00'); await notifier.tick();
+  setNow('2026-10-07T08:00:20+09:00'); await notifier.tick();
+  assert.equal(net.filter((p) => p.title === 'Metformin zamanı').length, 1);
+  assert.equal(net.filter((p) => p.title === 'Vitamin D zamanı').length, 2); // both of Ayşe's phones
+});
+
+test('one person taking their dose does not silence anybody else', async () => {
+  const { notifier, net, setNow, med } = twoPeople();
+  notifier.setUser('ayse', { meds: [med('Vitamin D', { log: [{ t: new Date('2026-10-07T07:30:00+03:00').getTime(), q: 4 }] })] });
+  setNow('2026-10-07T08:00:20+09:00');
+  await notifier.tick();
+  assert.deepEqual(net.map((p) => p.to), ['kenji-phone']);
+});
+
+test('people without a phone or without data are skipped quietly', async () => {
+  const { notifier, net, setNow } = twoPeople();
+  setNow('2026-10-07T08:00:20+03:00');
+  await notifier.tick();
+  assert.equal(net.some((p) => /Nobody sees this/.test(p.title)), false);
+  assert.equal(net.some((p) => p.to === 'ghost-phone'), false);
+});
+
+test('a test request goes to the device that asked, and only that one', async () => {
+  const { notifier, net, setNow } = twoPeople();
+  setNow('2026-10-07T12:00:00+03:00');
+  notifier.setSub('ayse-tablet', { uid: 'ayse', tz: 'Europe/Istanbul', updatedAt: 2, testAt: new Date('2026-10-07T11:59:50+03:00').getTime() });
+  await notifier.tick();
+  assert.deepEqual(net.map((p) => [p.to, p.tag]), [['ayse-tablet', 'dozi-test']]);
+});
+
+test('signing out (device removed) stops that phone only; the person\'s other phone keeps working', async () => {
+  const { notifier, net, setNow } = twoPeople();
+  notifier.setSub('ayse-iphone', null);
+  setNow('2026-10-07T08:00:20+03:00');
+  await notifier.tick();
+  assert.deepEqual(net.map((p) => p.to), ['ayse-tablet']);
+});
