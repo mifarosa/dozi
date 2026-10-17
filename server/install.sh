@@ -1,0 +1,254 @@
+#!/usr/bin/env bash
+# Dozi bildirim sunucusu kurulumu (Raspberry Pi OS, Debian, Ubuntu).
+#
+# Tek komutla kurar: Node.js, kod, bağımlılıklar, anahtarlar, .env ve sürekli çalışan servis.
+#   curl -fsSL https://raw.githubusercontent.com/mifarosa/dozi/main/server/install.sh | bash
+# ya da depoyu zaten indirdiysen:  bash server/install.sh
+#
+# Tekrar çalıştırmak güvenlidir: var olan anahtarlar ve .env korunur, yalnızca güncellenir.
+#
+# Ortam değişkenleri (hepsi isteğe bağlı; verilmezse sorulur):
+#   DOZI_DIR          kodun yeri (varsayılan /opt/dozi; betik depo içinden çalışıyorsa o depo)
+#   DOZI_BRANCH       hangi dal (varsayılan main)
+#   DOZI_EMAIL        VAPID için iletişim e-postası
+#   DOZI_SA_PATH      servis hesabı anahtarı (JSON) dosyasının yolu
+#   DOZI_NO_SYSTEMD=1 servis kurma, yalnızca hazırla
+#   DOZI_SKIP_CHECK=1 Firestore bağlantı denemesini atla
+#   Testler için: DOZI_SKIP_NPM=1, DOZI_NO_SUDO=1, DOZI_UNIT_PATH=<dosya> (bkz. server/test/install.test.mjs)
+set -euo pipefail
+
+REPO_URL=${DOZI_REPO:-https://github.com/mifarosa/dozi}
+BRANCH=${DOZI_BRANCH:-main}
+EXPECTED_PROJECT=dozi-27dd5
+
+say()  { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
+ok()   { printf '    \033[32m✓\033[0m %s\n' "$*"; }
+warn() { printf '    \033[33m!\033[0m %s\n' "$*"; }
+die()  { printf '\n\033[31mHata:\033[0m %s\n' "$*" >&2; exit 1; }
+
+# Yönetici yetkisi gereken komutlar: root isek doğrudan, değilsek sudo ile.
+as_root() {
+  if [ "$(id -u)" -eq 0 ] || [ "${DOZI_NO_SUDO:-}" = 1 ]; then "$@"
+  elif command -v sudo >/dev/null 2>&1; then sudo -E "$@"
+  else die "Bu adım yönetici yetkisi ister ama sudo yok. Betiği root olarak çalıştır."
+  fi
+}
+
+# Gerçekten kullanılabilir bir terminal var mı? (/dev/tty dosyası olması yetmez, açılabilmeli.)
+have_tty() { { true </dev/tty; } 2>/dev/null; }
+
+# Soru sor. Değişken önceden doluysa (ortamdan) sormaz. Terminalden okur,
+# böylece `curl ... | bash` ile çalıştırınca da sorabilir.
+ask() {
+  local var=$1 prompt=$2 default=${3:-} value=
+  [ -n "${!var:-}" ] && return 0
+  if ! have_tty; then
+    # No terminal (an automated re-run): reuse the earlier answer if there is one.
+    [ -n "$default" ] || die "$prompt gerekli ama terminal yok. $var değişkenini ver."
+    printf -v "$var" '%s' "$default"
+    return 0
+  fi
+  if [ -n "$default" ]; then
+    read -r -p "    $prompt [$default]: " value </dev/tty || true
+    value=${value:-$default}
+  else
+    read -r -p "    $prompt: " value </dev/tty || true
+  fi
+  printf -v "$var" '%s' "$value"
+}
+
+# ---------------------------------------------------------------- 1) Node.js
+node_ok() {
+  command -v node >/dev/null 2>&1 && node -e '
+    const [a, b] = process.versions.node.split(".").map(Number);
+    process.exit(a > 20 || (a === 20 && b >= 6) ? 0 : 1)'
+}
+
+say "1/6 Node.js"
+if node_ok; then
+  ok "Node.js $(node --version) var"
+else
+  command -v apt-get >/dev/null 2>&1 || die "Node.js 20.6 ya da üstü gerekli ve otomatik kuramıyorum (apt yok). Elle kur: https://nodejs.org"
+  warn "Node.js 20.6+ yok, Node.js 22 kuruluyor (NodeSource). Şifre sorabilir."
+  curl -fsSL https://deb.nodesource.com/setup_22.x | as_root bash -
+  as_root apt-get install -y nodejs
+  node_ok || die "Node.js kuruldu ama sürüm yetersiz: $(node --version 2>&1)"
+  ok "Node.js $(node --version) kuruldu"
+fi
+
+# ------------------------------------------------------------------- 2) Kod
+say "2/6 Kod"
+SELF=${BASH_SOURCE[0]:-}
+ROOT=
+if [ -n "$SELF" ] && [ -f "$SELF" ]; then
+  candidate=$(cd "$(dirname "$SELF")/.." && pwd)
+  [ -f "$candidate/js/reminders.js" ] && ROOT=$candidate
+fi
+if [ -z "$ROOT" ]; then
+  ROOT=${DOZI_DIR:-/opt/dozi}
+  command -v git >/dev/null 2>&1 || { command -v apt-get >/dev/null 2>&1 && as_root apt-get install -y git; }
+  command -v git >/dev/null 2>&1 || die "git gerekli. Kur ve tekrar çalıştır."
+  if [ -d "$ROOT/.git" ]; then
+    git -C "$ROOT" fetch --quiet origin "$BRANCH"
+    git -C "$ROOT" checkout --quiet "$BRANCH"
+    git -C "$ROOT" pull --quiet --ff-only origin "$BRANCH"
+    ok "$ROOT güncellendi ($BRANCH)"
+  else
+    as_root mkdir -p "$ROOT" && as_root chown "$(id -un)":"$(id -gn)" "$ROOT"
+    git clone --quiet --branch "$BRANCH" "$REPO_URL" "$ROOT" \
+      || die "Depo indirilemedi: $REPO_URL. Depo özelse önce kendin 'git clone' ile indirip 'bash server/install.sh' çalıştır."
+    ok "$ROOT içine indirildi ($BRANCH)"
+  fi
+else
+  ok "mevcut kod kullanılıyor: $ROOT"
+fi
+SERVER="$ROOT/server"
+[ -f "$SERVER/package.json" ] || die "$SERVER/package.json yok; bu dalda sunucu kodu bulunamadı."
+
+# ---------------------------------------------------------- 3) Bağımlılıklar
+say "3/6 Bağımlılıklar"
+if [ "${DOZI_SKIP_NPM:-}" = 1 ]; then
+  warn "bağımlılık kurulumu atlandı (DOZI_SKIP_NPM=1)"
+else
+  ( cd "$SERVER" && { npm ci --omit=dev --no-audit --no-fund >/dev/null 2>&1 || npm install --omit=dev --no-audit --no-fund >/dev/null; } ) \
+    || die "npm install başarısız. İnternet bağlantısını kontrol et."
+  ok "kuruldu"
+fi
+
+# ----------------------------------------------- 4) Firebase servis hesabı
+say "4/6 Firebase servis hesabı anahtarı"
+ENV_FILE="$SERVER/.env"
+DEFAULT_SA="$SERVER/serviceAccount.json"
+cat <<'MSG'
+    Sunucu Firestore'u bu anahtarla okur. Firebase konsolunda:
+    Proje ayarları → Hizmet hesapları → "Yeni özel anahtar oluştur" ile bir JSON indir.
+    (En az yetki için: Google Cloud → IAM → Hizmet hesapları → yeni hesap, rolü
+    "Cloud Datastore User", sonra Anahtarlar → Anahtar ekle → JSON.)
+    Bu dosya projenin anahtarıdır: kimseyle paylaşma, depoya koyma.
+MSG
+if [ -z "${DOZI_SA_PATH:-}" ] && [ -f "$DEFAULT_SA" ]; then DOZI_SA_PATH=$DEFAULT_SA; ok "bulundu: $DEFAULT_SA"; fi
+ask DOZI_SA_PATH "Anahtar JSON dosyasının yolu (dosya yoksa boş bırak, içeriğini yapıştırırsın)" ""
+SA_PATH=${DOZI_SA_PATH:-}
+if [ -z "$SA_PATH" ]; then
+  SA_PATH=$DEFAULT_SA
+  have_tty || die "Anahtar dosyası verilmedi (DOZI_SA_PATH)."
+  printf '    JSON dosyasının TÜM içeriğini yapıştır, sonra Enter ve Ctrl+D:\n'
+  cat >"$SA_PATH" </dev/tty
+fi
+SA_PATH=${SA_PATH/#\~/$HOME}
+[ -f "$SA_PATH" ] || die "Anahtar dosyası yok: $SA_PATH"
+PROJECT_ID=$(node -e '
+  try {
+    const k = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+    if (!k.private_key || !k.client_email || !k.project_id) throw new Error("eksik alan");
+    console.log(k.project_id);
+  } catch (e) {
+    // Never echo the file: it may hold a secret.
+    console.error("geçersiz: " + (e instanceof SyntaxError ? "JSON değil" : e.message));
+    process.exit(1);
+  }' "$SA_PATH" 2>/dev/null) \
+  || die "$SA_PATH geçerli bir servis hesabı anahtarı değil (Firebase'ten indirilen JSON olmalı)."
+if [ "$PROJECT_ID" != "$EXPECTED_PROJECT" ]; then
+  warn "Anahtar '$PROJECT_ID' projesine ait, Dozi '$EXPECTED_PROJECT' kullanıyor. Doğru anahtarı indirdiğinden emin ol."
+fi
+chmod 600 "$SA_PATH"
+ok "anahtar geçerli (proje: $PROJECT_ID), dosya izinleri 600"
+
+# ------------------------------------------------ 5) VAPID anahtarları, .env
+say "5/6 Bildirim anahtarları ve ayarlar"
+env_value() { [ -f "$ENV_FILE" ] && sed -n "s/^$1=//p" "$ENV_FILE" | head -n1 || true; }
+VAPID_PUBLIC=$(env_value VAPID_PUBLIC_KEY)
+VAPID_PRIVATE=$(env_value VAPID_PRIVATE_KEY)
+if [ -n "$VAPID_PUBLIC" ] && [ -n "$VAPID_PRIVATE" ]; then
+  ok "mevcut anahtarlar korunuyor (.env)"
+else
+  keys=$(cd "$SERVER" && node --input-type=module -e "
+    import webpush from 'web-push';
+    console.log(JSON.stringify(webpush.generateVAPIDKeys()));")
+  VAPID_PUBLIC=$(printf '%s' "$keys" | node -e 'process.stdin.on("data",d=>console.log(JSON.parse(d).publicKey))')
+  VAPID_PRIVATE=$(printf '%s' "$keys" | node -e 'process.stdin.on("data",d=>console.log(JSON.parse(d).privateKey))')
+  ok "yeni anahtar çifti üretildi"
+fi
+EXISTING_EMAIL=$(env_value VAPID_SUBJECT)
+EXISTING_EMAIL=${EXISTING_EMAIL#mailto:}
+ask DOZI_EMAIL "İletişim e-postan (push servislerine bildirilir)" "$EXISTING_EMAIL"
+[ -n "${DOZI_EMAIL:-}" ] || die "E-posta gerekli."
+umask 077
+cat >"$ENV_FILE" <<ENV
+# dozi-notifier ayarları. Gizlidir: depoya koyma. (install.sh tarafından yazıldı)
+GOOGLE_APPLICATION_CREDENTIALS=$SA_PATH
+VAPID_PUBLIC_KEY=$VAPID_PUBLIC
+VAPID_PRIVATE_KEY=$VAPID_PRIVATE
+VAPID_SUBJECT=mailto:$DOZI_EMAIL
+DATA_DIR=$SERVER/data
+TICK_SECONDS=30
+MAX_LATE_MINUTES=30
+ENV
+chmod 600 "$ENV_FILE"
+ok ".env yazıldı (izinler 600)"
+
+# ------------------------------------------------- 6) Deneme ve servis kurma
+say "6/6 Bağlantı denemesi ve servis"
+if [ "${DOZI_SKIP_CHECK:-}" = 1 ]; then
+  warn "bağlantı denemesi atlandı (DOZI_SKIP_CHECK=1)"
+else
+  LOG=$(mktemp)
+  set +e
+  ( cd "$SERVER" && timeout 25 node --env-file="$ENV_FILE" src/index.js >"$LOG" 2>&1 )
+  set -e
+  if grep -q "connected to Firestore" "$LOG"; then
+    ok "Firestore'a bağlanıldı: $(grep -m1 'connected to Firestore' "$LOG" | sed 's/^[^ ]* //')"
+  else
+    printf '\n--- günlük ---\n'; tail -n 15 "$LOG"; printf -- '--------------\n'
+    rm -f "$LOG"
+    die "Firestore'a bağlanılamadı. Anahtar doğru projeden mi, sunucunun interneti var mı? Yukarıdaki günlüğe bak."
+  fi
+  rm -f "$LOG"
+fi
+
+if [ "${DOZI_NO_SYSTEMD:-}" = 1 ] || ! command -v systemctl >/dev/null 2>&1; then
+  warn "systemd kurulmadı. Elle çalıştırmak için: cd $SERVER && npm start"
+else
+  UNIT=${DOZI_UNIT_PATH:-/etc/systemd/system/dozi-notifier.service}
+  NODE_BIN=$(command -v node)
+  as_root tee "$UNIT" >/dev/null <<UNIT_FILE
+[Unit]
+Description=Dozi reminder notifications
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=$(id -un)
+WorkingDirectory=$SERVER
+ExecStart=$NODE_BIN --env-file=$ENV_FILE src/index.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+UNIT_FILE
+  as_root systemctl daemon-reload
+  as_root systemctl enable --now dozi-notifier >/dev/null 2>&1
+  sleep 3
+  if systemctl is-active --quiet dozi-notifier; then
+    ok "servis çalışıyor ve cihaz açılınca kendiliğinden başlayacak"
+  else
+    warn "servis başlamadı. Bak: journalctl -u dozi-notifier -n 30 --no-pager"
+  fi
+fi
+
+cat <<DONE
+
+$(printf '\033[1m')KURULUM TAMAM$(printf '\033[0m')
+
+  Günlüğü izle:    journalctl -u dozi-notifier -f
+  Durdur / başlat: sudo systemctl stop|start dozi-notifier
+  Güncelle:        bash $SERVER/install.sh
+
+  Şimdi uygulamanın bu sunucuyu tanıması için PUBLIC anahtarı js/push-config.js dosyasına
+  yazmak gerekiyor. Bu anahtar gizli değildir, bana gönderebilirsin:
+
+    $VAPID_PUBLIC
+
+  (Private anahtar yalnızca $ENV_FILE içinde kalır; kimseye gönderme.)
+DONE

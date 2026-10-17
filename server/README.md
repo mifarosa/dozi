@@ -14,6 +14,43 @@ Telefon (Dozi) ──abonelik──▶ Firestore ◀──okur── bu servis �
 - Cihaz kapalıyken ya da servis durmuşken hatırlatma gelmez. Servis tekrar açılınca yalnızca son
   30 dakikadaki hatırlatmaları gönderir, sabahkileri akşam tekrar yağdırmaz.
 
+## Hızlı kurulum (önerilen)
+
+Üç küçük iş, sonra tek komut. Cihaz Raspberry Pi OS, Debian ya da Ubuntu olmalı.
+
+**1. Bilgisayarında, Firebase konsolunda (iki şey):**
+
+- **Firestore kuralları:** Firestore Database → Rules sekmesine depodaki `firestore.rules` içeriğini yapıştırıp **Publish** et. (Yoksa telefonlar kendi bildirim kaydını yazamaz.)
+- **Servis hesabı anahtarı:** Proje ayarları → Hizmet hesapları → **Yeni özel anahtar oluştur**. Bir `.json` dosyası iner. Bu dosya projenin tam erişim anahtarıdır: kimseyle paylaşma, depoya koyma.
+
+**2. Anahtarı sunucuya kopyala** (bilgisayarından; adres ve kullanıcıyı kendine göre değiştir):
+
+```sh
+scp ~/Downloads/dozi-27dd5-firebase-adminsdk-*.json KULLANICI@SUNUCU_ADRESI:~/serviceAccount.json
+```
+
+**3. Sunucuya bağlan ve şunu çalıştır:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mifarosa/dozi/main/server/install.sh | bash
+```
+
+Betik Node.js'i, kodu, bağımlılıkları kurar, bildirim anahtarlarını üretir, `.env`'i yazar, **Firestore'a gerçekten bağlanabildiğini dener** ve servisi sürekli çalışacak şekilde ayarlar. Yalnızca iki şey sorar: anahtar dosyasının yolu (`~/serviceAccount.json`) ve bir e-posta adresi. Bağlanamazsa servisi kurmaz, günlüğü gösterip durur.
+
+Bittiğinde ekrana bir **PUBLIC anahtar** yazar. Bu anahtar gizli değildir. Onu uygulamadaki `js/push-config.js` dosyasına yazmak gerekir (bana gönderirsen ben yazıp yayınlarım). **Private anahtar** ise yalnızca sunucuda kalır.
+
+Betiği tekrar çalıştırmak güvenlidir: var olan anahtarlar korunur, kod güncellenir.
+
+**4. Telefonda** aşağıdaki "3. Telefonlarda" bölümü.
+
+> Depo özelse `curl` indiremez. Önce `git clone` ile indirip `bash server/install.sh` çalıştır.
+
+---
+
+# Elle kurulum (ayrıntılı)
+
+Hızlı kurulum işini yaptıysa bunları okuman gerekmez.
+
 ## 1. Bir kez, kendi bilgisayarında
 
 **a) Anahtar çifti üret.** Sunucunun bildirimleri "senden geldi" diye imzalamasını sağlar.
