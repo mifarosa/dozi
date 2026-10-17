@@ -260,8 +260,11 @@ else
   rm -f "$LOG"
 fi
 
-if [ "${DOZI_NO_SYSTEMD:-}" = 1 ] || ! command -v systemctl >/dev/null 2>&1; then
-  warn "systemd kurulmadı. Elle çalıştırmak için: cd $SERVER && npm start"
+# WSL and containers ship systemctl without a running systemd, so test for the runtime dir too.
+if [ "${DOZI_NO_SYSTEMD:-}" = 1 ] || ! command -v systemctl >/dev/null 2>&1 \
+  || { [ -z "${DOZI_UNIT_PATH:-}" ] && [ ! -d /run/systemd/system ]; }; then
+  warn "systemd çalışmıyor (WSL olabilir), servis kurulmadı."
+  warn "Elle başlat: cd $SERVER && node --env-file=$ENV_FILE src/index.js"
 else
   UNIT=${DOZI_UNIT_PATH:-/etc/systemd/system/dozi-notifier.service}
   NODE_BIN=$(command -v node)
