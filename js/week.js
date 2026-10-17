@@ -1,8 +1,6 @@
 // "The week on screen": the calendar tab lists one week at a time, Monday first, instead of
 // a whole month that keeps growing. Pure helpers, no DOM.
-import { startOfWeek, addDays } from './dates.js';
-
-const monthName = new Intl.DateTimeFormat('tr-TR', { month: 'long' });
+import { startOfWeek, addDays, monthNameFmt } from './dates.js';
 
 // weekStart is null for "this week", so it keeps meaning this week as the days go by.
 export function resolveWeek(weekStart, now = new Date()) {
@@ -11,11 +9,11 @@ export function resolveWeek(weekStart, now = new Date()) {
   return { start, end: addDays(start, 6), isCurrent: start.getTime() === current.getTime() };
 }
 
-// "12–18 Ekim" or "28 Eylül – 4 Ekim"
+// "12–18 October" or "28 September – 4 October"
 export function weekLabel(start) {
   const end = addDays(start, 6);
-  if (start.getMonth() === end.getMonth()) return `${start.getDate()}–${end.getDate()} ${monthName.format(end)}`;
-  return `${start.getDate()} ${monthName.format(start)} – ${end.getDate()} ${monthName.format(end)}`;
+  if (start.getMonth() === end.getMonth()) return `${start.getDate()}–${end.getDate()} ${monthNameFmt.format(end)}`;
+  return `${start.getDate()} ${monthNameFmt.format(start)} – ${end.getDate()} ${monthNameFmt.format(end)}`;
 }
 
 // The value to keep in state for the week containing `date`: null when that is this week.

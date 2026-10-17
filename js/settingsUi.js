@@ -1,6 +1,9 @@
-// Settings behaviour: apply and remember the look, and download the data.
+// Settings behaviour: apply and remember the look and language, and download the data.
 import { state, refresh } from './state.js';
 import { loadPrefs, savePrefs, applyPrefs } from './prefs.js';
+import { applyLanguage } from './langUi.js';
+import { redrawCloudBar } from './cloudSync.js';
+import { syncPushRecord } from './pushUi.js';
 
 export let prefs = loadPrefs();
 
@@ -12,6 +15,7 @@ function syncThemeColor() {
 
 function apply() {
   applyPrefs(prefs);
+  applyLanguage(prefs.lang);
   syncThemeColor();
 }
 
@@ -36,11 +40,16 @@ export function initSettings() {
   document.getElementById('app').addEventListener('click', (e) => {
     const theme = e.target.closest('[data-theme-pick]')?.dataset.themePick;
     const accent = e.target.closest('[data-accent-pick]')?.dataset.accentPick;
-    if (theme || accent) {
-      prefs = { ...prefs, ...(theme && { theme }), ...(accent && { accent }) };
+    const lang = e.target.closest('[data-lang-pick]')?.dataset.langPick;
+    if (theme || accent || lang) {
+      prefs = { ...prefs, ...(theme && { theme }), ...(accent && { accent }), ...(lang && { lang }) };
       savePrefs(prefs);
       apply();
       refresh();
+      if (lang) {
+        redrawCloudBar();
+        syncPushRecord(); // the server writes reminders in this device's language
+      }
     } else if (e.target.closest('[data-export]')) {
       downloadData();
     }

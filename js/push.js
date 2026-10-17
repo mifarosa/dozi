@@ -2,6 +2,8 @@
 // The server (see ../server) sends the reminders, so they arrive even when Dozi is closed.
 import * as cloud from './cloud.js';
 import { vapidPublicKey } from './push-config.js';
+import { t } from './i18n.js';
+import { getLang } from './lang.js';
 
 export const pushConfigured = Boolean(vapidPublicKey);
 
@@ -23,12 +25,12 @@ export async function subscriptionDocId(endpoint) {
 // permissions", error codes) mean nothing to the user and look broken, so they stay in the console.
 export function friendlyPushError(err) {
   const code = String(err?.code || '');
-  if (code.includes('permission-denied')) return 'Kayıt yapılamadı. Çıkış yapıp tekrar giriş yapmayı dene.';
+  if (code.includes('permission-denied')) return t('push.errPermission');
   if (code.includes('unavailable') || err?.name === 'NetworkError' || (typeof navigator !== 'undefined' && navigator.onLine === false)) {
-    return 'Bağlantı yok gibi görünüyor. İnternetini kontrol edip tekrar dene.';
+    return t('push.errNetwork');
   }
-  if (err?.name === 'NotAllowedError') return 'Bildirim izni verilmedi.';
-  return 'Bir sorun oldu. Biraz sonra tekrar dene.';
+  if (err?.name === 'NotAllowedError') return t('push.errNotAllowed');
+  return t('push.errOther');
 }
 
 // What the notification bar should show. Pure, so every case is testable.
@@ -84,6 +86,7 @@ export async function saveSubscription(user, sub) {
     endpoint: json.endpoint,
     keys: json.keys,
     tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    lang: getLang(), // the server writes the reminder in this language
     ua: navigator.userAgent.slice(0, 200),
     updatedAt: Date.now(),
   });

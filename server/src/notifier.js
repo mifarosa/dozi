@@ -3,6 +3,7 @@ import './tz.js';
 // on every tick, sends the reminders that are due. Network and storage are injected,
 // so the whole flow can be tested without Firebase or a push service.
 import { dueReminders } from './due.js';
+import { translate, pillsText } from '../../js/i18n.js';
 
 const TEST_FRESH_MS = 2 * 60 * 1000; // a test request older than this is ignored (e.g. after a restart)
 const KEEP_DAYS = 2;
@@ -46,11 +47,12 @@ export function createNotifier({
   }
 
   // Send to every subscription; returns how many accepted it. Dead ones are removed.
+  // `payload` may be a function of the subscription, so each device gets its own language.
   async function sendAll(list, payload) {
     let accepted = 0;
     for (const sub of list) {
       try {
-        await send(sub, payload);
+        await send(sub, typeof payload === 'function' ? payload(sub) : payload);
         accepted += 1;
       } catch (err) {
         if (isGone(err)) {
@@ -71,7 +73,9 @@ export function createNotifier({
       if (!at || at <= (handledTest.get(sub.id) || 0)) continue;
       handledTest.set(sub.id, at);
       if (now() - at > TEST_FRESH_MS) continue;
-      const accepted = await sendAll([sub], { title: 'Dozi', body: 'Bildirimler çalışıyor ✓', tag: 'dozi-test' });
+      const accepted = await sendAll([sub], (s) => ({
+        title: 'Dozi', body: translate(s.lang, 'notify.test'), tag: 'dozi-test',
+      }));
       log(`test push to ${sub.id.slice(0, 8)}…: ${accepted ? 'sent' : 'not delivered'}`);
     }
   }
@@ -97,9 +101,11 @@ export function createNotifier({
         });
         for (const r of due) {
           if (sent[r.key]) continue;
-          const accepted = await sendAll(list, {
-            title: `${r.name} zamanı`, body: r.body, tag: `dozi-${r.medId}-${r.time}`,
-          });
+          const accepted = await sendAll(list, (s) => ({
+            title: translate(s.lang, 'notify.title', { name: r.name }),
+            body: `${pillsText(r.dose, s.lang)} · ${r.time}`,
+            tag: `dozi-${r.medId}-${r.time}`,
+          }));
           // Not marked when nobody accepted it, so the next tick tries again (until it is too late).
           if (accepted > 0) {
             sent[r.key] = true;

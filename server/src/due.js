@@ -3,7 +3,8 @@ import './tz.js';
 // It reuses the app's own functions so "already took it today" means exactly the same
 // thing here as on the phone.
 import { pendingTimes } from '../../js/reminders.js';
-import { remainingQ, formatPills, normalizeMed } from '../../js/store.js';
+import { remainingQ, normalizeMed } from '../../js/store.js';
+import { pillsText } from '../../js/i18n.js';
 import { toWall, isValidTimeZone } from './wall.js';
 
 const DEFAULT_ZONE = 'Europe/Istanbul';
@@ -30,7 +31,8 @@ export function wallDayKey(wallMs) {
 //   timeZone     IANA zone of the device that asked for notifications
 //   maxLateMin   a time older than this is skipped, so a late subscription or a
 //                server restart never replays the morning's reminders in the evening
-// Returns [{ key, medId, name, time, body }]; key is stable for one medicine, time and day.
+// Returns [{ key, medId, name, time, dose, body }]; key is stable for one medicine, time and day.
+// body is in Turkish; the notifier rewrites it per device from `dose` and `time`.
 export function dueReminders({ uid, meds, timeZone, nowMs, maxLateMin = 30 }) {
   const zone = isValidTimeZone(timeZone) ? timeZone : DEFAULT_ZONE;
   const wallNow = new Date(toWall(nowMs, zone));
@@ -54,7 +56,8 @@ export function dueReminders({ uid, meds, timeZone, nowMs, maxLateMin = 30 }) {
         medId: m.id,
         name: m.name,
         time,
-        body: `${formatPills(m.dose)} hap · ${time}`,
+        dose: m.dose,
+        body: `${pillsText(m.dose, 'tr')} · ${time}`,
       });
     }
   }

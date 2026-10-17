@@ -3,6 +3,7 @@ import { state, findMed, commit, showDay } from '../state.js';
 import { backfillEntry } from '../boxes.js';
 import { dayKey, startOfDay, addDays } from '../dates.js';
 import { esc } from '../html.js';
+import { t } from '../i18n.js';
 
 const dialog = document.getElementById('backfill-dialog');
 const form = document.getElementById('backfill-form');
@@ -39,7 +40,7 @@ export function initBackfillForm() {
     const m = findMed(form.med.value);
     const entry = m && backfillEntry(m, { date: form.date.value, time: form.time.value, q: Number(form.q.value) });
     if (!entry) {
-      error.textContent = 'Bu kutuda hap kalmadı. Önce yeni kutuya geç.';
+      error.textContent = t('backfill.empty');
       error.hidden = false;
       return;
     }

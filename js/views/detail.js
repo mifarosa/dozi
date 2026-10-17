@@ -2,7 +2,8 @@
 import {
   totalQ, remainingQ, daysLeft, takenTodayQ, formatPills,
 } from '../store.js';
-import { startOfDay, formatTime } from '../dates.js';
+import { t, pillsText, pillUnit } from '../i18n.js';
+import { startOfDay, formatTime, dateFmt } from '../dates.js';
 import { reminderNote } from '../notifications.js';
 import { blisterHtml } from './pills.js';
 import { timeChartHtml } from './timeChart.js';
@@ -16,7 +17,7 @@ function todayLogHtml(m) {
   const start = startOfDay(new Date()).getTime();
   const today = m.log.filter((e) => e.t >= start).sort((a, b) => a.t - b.t);
   if (!today.length) return '';
-  const rows = today.map((e) => `<li>${formatTime(e.t)} · ${formatPills(e.q)} hap</li>`);
+  const rows = today.map((e) => `<li>${formatTime(e.t)} · ${pillsText(e.q)}</li>`);
   return `<ul class="today-log">${rows.join('')}</ul>`;
 }
 
@@ -26,9 +27,9 @@ function takenChartHtml(m) {
   const rows = lastDaysRows(buildEntries([m], []), 14, now, m.times);
   if (!hasMarks(rows)) return '';
   return `<section class="card chart-card">
-      <h2 class="section-title">Alış saatleri · son 14 gün</h2>
+      <h2 class="section-title">${t('detail.chartTitle')}</h2>
       ${timeChartHtml({
-    rows, todayKey: dayKey(now), kinds: ['med'], planned: m.times.length > 0, label: `${m.name} alış saatleri, son 14 gün`,
+    rows, todayKey: dayKey(now), kinds: ['med'], planned: m.times.length > 0, label: t('detail.chartLabel', { name: m.name }),
   })}
     </section>`;
 }
@@ -45,31 +46,31 @@ export function detailHtml(m) {
   return `
     <section class="card summary">
       <h2>${esc(m.name)}</h2>
-      <div class="big">${formatPills(remainingQ(m))}<small> / ${formatPills(totalQ(m))} hap</small></div>
-      <div class="med-sub">Günlük ${formatPills(perDayQ)} hap · ~${daysLeft(m)} gün yeter${finished ? '' : ` (${end.toLocaleDateString('tr-TR')})`}${m.boxes.length ? ` · ${m.boxes.length + 1}. kutu` : ''}</div>
-      <div class="today ${doneToday ? 'done' : ''}">Bugün: ${formatPills(todayQ)} / ${formatPills(perDayQ)} hap</div>
-      ${m.times.length ? `<div class="med-sub">Hatırlatma: ${m.times.join(', ')}${reminderNote()}</div>` : ''}
+      <div class="big">${formatPills(remainingQ(m))}<small> / ${pillsText(totalQ(m))}</small></div>
+      <div class="med-sub">${t('detail.daily', { amount: pillsText(perDayQ) })} · ${t('list.daysLeft', { n: daysLeft(m) })}${finished ? '' : ` (${dateFmt.format(end)})`}${m.boxes.length ? ` · ${t('detail.boxNo', { n: m.boxes.length + 1 })}` : ''}</div>
+      <div class="today ${doneToday ? 'done' : ''}">${t('detail.today', { a: formatPills(todayQ), b: formatPills(perDayQ), unit: pillUnit(perDayQ) })}</div>
+      ${m.times.length ? `<div class="med-sub">${t('detail.reminder', { times: m.times.join(', '), note: reminderNote() })}</div>` : ''}
     </section>
 ${finished ? `
     <section class="card newbox">
-      <p><b>Kutu bitti.</b> Yeni kutuya geçince hatırlatmalar yeniden başlar.</p>
-      <button class="btn primary small" data-newbox="${esc(m.id)}">Yeni kutuya geç</button>
+      <p><b>${t('detail.boxFinishedBold')}</b>${t('detail.boxFinishedRest')}</p>
+      <button class="btn primary small" data-newbox="${esc(m.id)}">${t('detail.switchBox')}</button>
     </section>` : ''}
     <section class="card intake">
-      <label class="take-time">Aldığın saat (boşsa şu an)
+      <label class="take-time">${t('detail.takeTime')}
         <input id="take-time" type="time">
       </label>
       <button class="btn primary big-btn" data-take="${m.dose}" ${off}>
-        Aldım · ${formatPills(m.dose)} hap
+        ${t('detail.take', { amount: pillsText(m.dose) })}
       </button>
       <div class="chips">
         <button class="chip" data-take="1" ${off}>¼</button>
         <button class="chip" data-take="2" ${off}>½</button>
         <button class="chip" data-take="4" ${off}>1</button>
-        <button class="chip ghost" data-undo ${m.log.length ? '' : 'disabled'}>Geri al</button>
+        <button class="chip ghost" data-undo ${m.log.length ? '' : 'disabled'}>${t('detail.undo')}</button>
       </div>
       ${todayLogHtml(m)}
-      <button class="btn ghost small backfill-btn" data-backfill="${esc(m.id)}">Unuttum, geçmiş güne ekle</button>
+      <button class="btn ghost small backfill-btn" data-backfill="${esc(m.id)}">${t('detail.backfill')}</button>
     </section>
 
     ${takenChartHtml(m)}
@@ -79,8 +80,8 @@ ${finished ? `
     </section>
 
     <div class="actions">
-      <button class="btn ghost" data-edit>Düzenle</button>
-      <button class="btn ghost" data-newbox="${esc(m.id)}">Yeni kutu</button>
-      <button class="btn danger" data-delete>Sil</button>
+      <button class="btn ghost" data-edit>${t('detail.edit')}</button>
+      <button class="btn ghost" data-newbox="${esc(m.id)}">${t('detail.newBox')}</button>
+      <button class="btn danger" data-delete>${t('detail.delete')}</button>
     </div>`;
 }

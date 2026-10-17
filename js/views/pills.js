@@ -1,5 +1,6 @@
 // Blister drawing: one pie per pill, grouped by blister.
 import { QUARTERS, cellQuarters, formatPills } from '../store.js';
+import { t } from '../i18n.js';
 
 // One pill: a circle whose remaining share is drawn as a filled pie.
 export function pillSvg(usedQ) {
@@ -34,11 +35,11 @@ export function blisterHtml(m, b) {
   const cells = [];
   for (let p = 0; p < m.perBlister; p++) {
     const index = b * m.perBlister + p;
-    cells.push(`<div class="cell" title="${b + 1}. blister, ${p + 1}. hap">${pillSvg(cellQuarters(m, index))}</div>`);
+    cells.push(`<div class="cell" title="${t('pills.cellTitle', { b: b + 1, p: p + 1 })}">${pillSvg(cellQuarters(m, index))}</div>`);
   }
   const left = Math.max(0, blisterLeftQ(m, b));
   return `<div class="blister">
-    <div class="blister-head"><span>${b + 1}. blister</span><span>${formatPills(left)} kaldı</span></div>
+    <div class="blister-head"><span>${t('pills.blister', { b: b + 1 })}</span><span>${t('pills.left', { left: formatPills(left) })}</span></div>
     <div class="cells">${cells.join('')}</div>
   </div>`;
 }

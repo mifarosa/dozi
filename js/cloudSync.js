@@ -8,26 +8,31 @@ import { decideSync, mergeMeds, mergeExtras } from './sync.js';
 import { esc } from './html.js';
 import * as cloud from './cloud.js';
 import { pushConfigured, disablePush } from './push.js';
+import { t } from './i18n.js';
 
 const bar = document.getElementById('cloud-bar');
 
 let user = null;
-let status = ''; // short text shown in the bar
+let status = ''; // message key of the short text shown in the bar (translated when drawn)
 
 function renderBar() {
   if (!cloud.available) return;
   bar.hidden = false;
   if (!user) {
-    bar.innerHTML = `<span>${esc(status || 'Verilerin kaybolmasın: hesabınla yedekle')}</span>
-      <button class="btn primary small" data-cloud="in">Google ile giriş</button>`;
+    bar.innerHTML = `<span>${esc(t(status || 'cloud.prompt'))}</span>
+      <button class="btn primary small" data-cloud="in">${t('cloud.signIn')}</button>`;
     return;
   }
-  bar.innerHTML = `<span>&#9729; ${esc(user.email || 'Giriş yapıldı')} · ${esc(status || 'yedekleniyor')}</span>
-    <button class="btn ghost small" data-cloud="out">Çıkış</button>`;
+  bar.innerHTML = `<span>&#9729; ${esc(user.email || t('cloud.signedIn'))} · ${esc(t(status || 'cloud.backingUp'))}</span>
+    <button class="btn ghost small" data-cloud="out">${t('cloud.signOut')}</button>`;
 }
 
-function setStatus(text) {
-  status = text;
+export function redrawCloudBar() {
+  renderBar();
+}
+
+function setStatus(key) {
+  status = key;
   renderBar();
 }
 
@@ -36,10 +41,10 @@ async function push() {
   try {
     await cloud.pushData(user.uid, { meds: state.meds, extras: state.extras }, state.meta.updatedAt);
     setMeta({ uid: user.uid });
-    setStatus('yedeklendi');
+    setStatus('cloud.backedUp');
   } catch {
     // The Firestore SDK keeps the write queued and retries once we are online.
-    setStatus('yedekleme bekliyor');
+    setStatus('cloud.waiting');
   }
 }
 
@@ -58,7 +63,7 @@ function applyRemote(remote) {
   if (decision === 'pull') {
     replaceData(remoteMeds, remoteExtras);
     setMeta({ updatedAt: remoteUpdated, uid: user.uid });
-    setStatus('yedekten yüklendi');
+    setStatus('cloud.loaded');
     refresh();
   } else if (decision === 'merge') {
     state.meds = mergeMeds(state.meds, remoteMeds);
@@ -68,7 +73,7 @@ function applyRemote(remote) {
     push();
   } else {
     setMeta({ uid: user.uid });
-    setStatus('yedeklendi');
+    setStatus('cloud.backedUp');
   }
 }
 
@@ -85,7 +90,7 @@ export function initCloudSync() {
         await cloud.signOut();
       }
     } catch {
-      setStatus('giriş yapılamadı');
+      setStatus('cloud.signInFailed');
     }
   });
 
@@ -93,13 +98,13 @@ export function initCloudSync() {
   cloud.startCloud({
     onUser(next) {
       user = next;
-      status = next ? 'bağlanıyor' : '';
+      status = next ? 'cloud.connecting' : '';
       renderBar();
       setUser(next);
     },
     onRemote: applyRemote,
     onError() {
-      setStatus('bağlantı kurulamadı');
+      setStatus('cloud.offline');
     },
   });
 }

@@ -6,6 +6,7 @@ import {
 import { parseTimes } from '../reminders.js';
 import { askPermission } from '../notifications.js';
 import { checkReminders } from '../reminderLoop.js';
+import { t } from '../i18n.js';
 
 const MAX_TIMES = 6;
 
@@ -20,8 +21,8 @@ let editingId = null; // id being edited in the form, null when adding
 function addTimeRow(value = '') {
   const row = document.createElement('div');
   row.className = 'time-row';
-  row.innerHTML = '<input type="time" aria-label="Hatırlatma saati">'
-    + '<button type="button" class="icon-btn mini" aria-label="Saati sil">&times;</button>';
+  row.innerHTML = `<input type="time" aria-label="${t('form.timeAria')}">`
+    + `<button type="button" class="icon-btn mini" aria-label="${t('form.removeTime')}">&times;</button>`;
   row.querySelector('input').value = value;
   timeRows.append(row);
   addTimeBtn.hidden = timeRows.children.length >= MAX_TIMES;
@@ -39,7 +40,7 @@ function fillPosition(m) {
 
 export function openMedForm(m) {
   editingId = m ? m.id : null;
-  document.getElementById('form-title').textContent = m ? 'İlacı düzenle' : 'Yeni ilaç';
+  document.getElementById('form-title').textContent = m ? t('form.edit') : t('form.new');
   formError.hidden = true;
   form.reset();
   timeRows.innerHTML = '';
@@ -104,7 +105,7 @@ export function initMedForm() {
     e.preventDefault();
     const fields = readFields();
     if (!fields) {
-      formError.textContent = 'Kaldığın yer, kutudaki blister ve hap sayısını aşıyor.';
+      formError.textContent = t('form.positionError');
       formError.hidden = false;
       return;
     }

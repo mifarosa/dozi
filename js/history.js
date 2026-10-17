@@ -1,16 +1,16 @@
 // Calendar data: turns medicine intakes and free-form drinks into one timeline.
 import { dayKey } from './dates.js';
-import { formatPills } from './store.js';
+import { getLang } from './lang.js';
+import { t, pillsText } from './i18n.js';
 
 // Free-form things people drink or take besides their prescribed medicines.
-export const EXTRA_KINDS = {
-  supplement: 'Vitamin / takviye',
-  tea: 'Bitki çayı',
-  other: 'Diğer',
-};
+export const EXTRA_KIND_IDS = ['supplement', 'tea', 'other'];
+export const isExtraKind = (kind) => EXTRA_KIND_IDS.includes(kind);
 
-export const KIND_LABELS = { med: 'İlaç', ...EXTRA_KINDS };
-const KIND_ORDER = ['med', 'supplement', 'tea', 'other'];
+const KIND_ORDER = ['med', ...EXTRA_KIND_IDS];
+export const kindLabel = (kind) => t(`kind.${kind}`);
+// Every kind with its label in the current language, in display order.
+export const kindLabels = () => Object.fromEntries(KIND_ORDER.map((k) => [k, kindLabel(k)]));
 
 // Every intake and extra, newest first.
 export function buildEntries(meds, extras) {
@@ -19,15 +19,15 @@ export function buildEntries(meds, extras) {
     for (const e of m.log) {
       entries.push({
         t: e.t, key: dayKey(new Date(e.t)), name: m.name, kind: 'med',
-        detail: `${formatPills(e.q)} hap`, medId: m.id,
+        detail: pillsText(e.q), medId: m.id,
       });
     }
   }
   for (const x of extras) {
-    const kind = EXTRA_KINDS[x.kind] ? x.kind : 'other';
+    const kind = isExtraKind(x.kind) ? x.kind : 'other';
     entries.push({
       t: x.t, key: dayKey(new Date(x.t)), name: x.name, kind,
-      detail: EXTRA_KINDS[kind], extraId: x.id,
+      detail: kindLabel(kind), extraId: x.id,
     });
   }
   return entries.sort((a, b) => b.t - a.t);
@@ -63,7 +63,7 @@ export function recentExtras(extras, limit = 6) {
     const key = x.name.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ name: x.name, kind: EXTRA_KINDS[x.kind] ? x.kind : 'other' });
+    out.push({ name: x.name, kind: isExtraKind(x.kind) ? x.kind : 'other' });
     if (out.length === limit) break;
   }
   return out;
@@ -79,19 +79,27 @@ export function resolveExtraTime(date, time, now = new Date()) {
 }
 
 // Always-visible examples for the "what did you drink" form. The user's own recent
-// entries come first, then these fill the gaps.
-export const SUGGESTIONS = [
-  { name: 'C vitamini', kind: 'supplement' }, { name: 'D vitamini', kind: 'supplement' },
-  { name: 'Magnezyum', kind: 'supplement' }, { name: 'Omega 3', kind: 'supplement' },
-  { name: 'Papatya çayı', kind: 'tea' }, { name: 'Ihlamur', kind: 'tea' },
-  { name: 'Adaçayı', kind: 'tea' }, { name: 'Yeşil çay', kind: 'tea' }, { name: 'Rezene çayı', kind: 'tea' },
-];
+// entries come first, then these fill the gaps. Names are in the app's language.
+export const SUGGESTION_SETS = {
+  tr: [
+    { name: 'C vitamini', kind: 'supplement' }, { name: 'D vitamini', kind: 'supplement' },
+    { name: 'Magnezyum', kind: 'supplement' }, { name: 'Omega 3', kind: 'supplement' },
+    { name: 'Papatya çayı', kind: 'tea' }, { name: 'Ihlamur', kind: 'tea' },
+    { name: 'Adaçayı', kind: 'tea' }, { name: 'Yeşil çay', kind: 'tea' }, { name: 'Rezene çayı', kind: 'tea' },
+  ],
+  en: [
+    { name: 'Vitamin C', kind: 'supplement' }, { name: 'Vitamin D', kind: 'supplement' },
+    { name: 'Magnesium', kind: 'supplement' }, { name: 'Omega 3', kind: 'supplement' },
+    { name: 'Chamomile tea', kind: 'tea' }, { name: 'Linden tea', kind: 'tea' },
+    { name: 'Sage tea', kind: 'tea' }, { name: 'Green tea', kind: 'tea' }, { name: 'Fennel tea', kind: 'tea' },
+  ],
+};
 const MAX_CHIPS = 10;
 const RECENT_CHIPS = 6;
 
 export function suggestionChips(extras) {
   const chips = recentExtras(extras, RECENT_CHIPS);
-  for (const sug of SUGGESTIONS) {
+  for (const sug of SUGGESTION_SETS[getLang()] || SUGGESTION_SETS.tr) {
     if (chips.length >= MAX_CHIPS) break;
     if (!chips.some((c) => c.name.toLowerCase() === sug.name.toLowerCase())) chips.push(sug);
   }

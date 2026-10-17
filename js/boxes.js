@@ -3,6 +3,7 @@
 import { totalQ, remainingQ } from './store.js';
 import { dayKey, startOfDay } from './dates.js';
 import { resolveExtraTime } from './history.js';
+import { t } from './i18n.js';
 
 const DAY_MS = 86400000;
 
@@ -33,9 +34,9 @@ export function newBoxPrompt(m, now = new Date()) {
   return daysAgo >= 1 ? { daysAgo } : null;
 }
 
-// "dün bitti", "3 gün önce bitti"
+// "dün bitti" / "ran out yesterday", "3 gün önce bitti" / "ran out 3 days ago"
 export function endedLabel(daysAgo) {
-  return daysAgo === 1 ? 'dün bitti' : `${daysAgo} gün önce bitti`;
+  return daysAgo === 1 ? t('ended.yesterday') : t('ended.daysAgo', { n: daysAgo });
 }
 
 // Fields to merge into the medicine when a new box is opened.

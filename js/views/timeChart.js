@@ -3,9 +3,10 @@
 // color alone. Rows are buttons: tapping one selects that day (the list below it is the
 // chart's table view). Returns markup only.
 import { esc } from '../html.js';
-import { dayFmt, DAY_NAMES } from '../dates.js';
+import { dayFmt } from '../dates.js';
+import { t, dayNames } from '../i18n.js';
 import { dayFraction, assignLanes } from '../timeline.js';
-import { KIND_LABELS } from '../history.js';
+import { kindLabel } from '../history.js';
 
 // The SVG scales to the card. The card is about 264 px wide on the narrowest phone (320 px), so
 // a 284 wide viewBox keeps marks near 9 px across and rows near 24 px tall even there.
@@ -54,9 +55,9 @@ function rowHtml(row, top, { selectedDay, todayKey, laid }) {
   const rowH = heightFor(laid.lanes);
   const mid = top + rowH / 2;
   const names = row.items.map((it) => `${clock(it.minutes)} ${it.name}`);
-  const label = `${dayFmt.format(row.date)}: ${names.length ? names.join(', ') : 'kayıt yok'}`;
+  const label = `${dayFmt.format(row.date)}: ${names.length ? names.join(', ') : t('chart.noEntries')}`;
   const cls = ['tc-row', row.key === selectedDay ? 'sel' : '', row.key === todayKey ? 'is-today' : ''].join(' ');
-  const weekday = DAY_NAMES[(row.date.getDay() + 6) % 7];
+  const weekday = dayNames()[(row.date.getDay() + 6) % 7];
   const planned = row.planned.map((m) => (
     `<line class="tc-plan" x1="${x(m).toFixed(1)}" x2="${x(m).toFixed(1)}" y1="${top + 4}" y2="${top + rowH - 4}"/>`
   )).join('');
@@ -92,8 +93,8 @@ export function timeChartHtml({
   }).join('');
   const body = placed.map(({ r, top, laid }) => rowHtml(r, top, { selectedDay, todayKey, laid })).join('');
   // One series needs no legend box; two or more always get one.
-  const keys = kinds.length > 1 ? kinds.map((k) => `<span>${legendIcon(k)}${KIND_LABELS[k]}</span>`) : [];
-  if (planned) keys.push('<span><svg class="lg" viewBox="0 0 12 12" aria-hidden="true"><line class="tc-plan" x1="6" x2="6" y1="1" y2="11"/></svg>Hatırlatma saati</span>');
+  const keys = kinds.length > 1 ? kinds.map((k) => `<span>${legendIcon(k)}${kindLabel(k)}</span>`) : [];
+  if (planned) keys.push(`<span><svg class="lg" viewBox="0 0 12 12" aria-hidden="true"><line class="tc-plan" x1="6" x2="6" y1="1" y2="11"/></svg>${t('chart.planned')}</span>`);
   return `<svg class="tc" viewBox="0 0 ${W} ${height}" role="group" aria-label="${esc(label)}">${grid}${body}</svg>
     ${keys.length ? `<div class="cal-legend tc-legend">${keys.join('')}</div>` : ''}`;
 }
