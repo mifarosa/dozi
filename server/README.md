@@ -35,7 +35,7 @@ scp ~/Downloads/dozi-27dd5-firebase-adminsdk-*.json KULLANICI@SUNUCU_ADRESI:~/se
 curl -fsSL https://raw.githubusercontent.com/mifarosa/dozi/main/server/install.sh | bash
 ```
 
-Betik Node.js'i, kodu, bağımlılıkları kurar, bildirim anahtarlarını üretir, `.env`'i yazar, **Firestore'a gerçekten bağlanabildiğini dener** ve servisi sürekli çalışacak şekilde ayarlar. Yalnızca iki şey sorar: anahtar dosyasının yolu (`~/serviceAccount.json`) ve bir e-posta adresi. Bağlanamazsa servisi kurmaz, günlüğü gösterip durur.
+Betik Node.js'i (yoksa ya da eskiyse resmî Node.js 22'yi nodejs.org'dan, sağlama toplamını doğrulayarak), kodu, bağımlılıkları kurar, bildirim anahtarlarını üretir, `.env`'i yazar, **Firestore'a gerçekten bağlanabildiğini dener** ve servisi sürekli çalışacak şekilde ayarlar. Yalnızca iki şey sorar: anahtar dosyasının yolu (`~/serviceAccount.json`) ve bir e-posta adresi. Bağlanamazsa servisi kurmaz, günlüğü gösterip durur.
 
 Bittiğinde ekrana bir **PUBLIC anahtar** yazar. Bu anahtar gizli değildir. Onu uygulamadaki `js/push-config.js` dosyasına yazmak gerekir (bana gönderirsen ben yazıp yayınlarım). **Private anahtar** ise yalnızca sunucuda kalır.
 

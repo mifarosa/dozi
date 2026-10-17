@@ -133,3 +133,110 @@ test('the service is installed, enabled and started, with the right paths', opts
   assert.ok(calls.includes('is-active --quiet dozi-notifier'));
   assert.match(r.out, /servis çalışıyor/);
 });
+
+
+// ---- installing Node.js from nodejs.org (curl and uname are stubbed, nothing is downloaded) ----
+
+import { createHash } from 'node:crypto';
+
+// A fake nodejs.org: a tarball with a tiny `node`, and a SHASUMS256.txt that lists it.
+function fakeDist(root, { arch = 'x64', wrongSum = false } = {}) {
+  const dist = path.join(root, 'dist');
+  const name = `node-v22.99.0-linux-${arch}`;
+  const pkg = path.join(root, 'pkg', name, 'bin');
+  mkdirSync(pkg, { recursive: true });
+  mkdirSync(dist, { recursive: true });
+  for (const bin of ['node', 'npm', 'npx']) {
+    writeFileSync(path.join(pkg, bin), '#!/bin/sh\ncase "$1" in --version) echo v22.99.0 ;; *) exit 0 ;; esac\n');
+    chmodSync(path.join(pkg, bin), 0o755);
+  }
+  const tar = `${name}.tar.gz`;
+  const made = spawnSync('tar', ['-czf', path.join(dist, tar), '-C', path.join(root, 'pkg'), name]);
+  assert.equal(made.status, 0);
+  const sum = wrongSum ? '0'.repeat(64) : createHash('sha256').update(readFileSync(path.join(dist, tar))).digest('hex');
+  writeFileSync(path.join(dist, 'SHASUMS256.txt'), [
+    `${'a'.repeat(64)}  node-v22.99.0-linux-${arch}.tar.xz`, `${sum}  ${tar}`, `${'b'.repeat(64)}  node-v22.99.0-win-x64.zip`,
+  ].join('\n') + '\n');
+  return dist;
+}
+
+// A curl that serves files from a folder instead of the internet. Exit 22 = "not found", like curl -f.
+function stubCurl(root, dist) {
+  const bin = path.join(root, 'bin');
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(path.join(bin, 'curl'), `#!/bin/sh
+out=""; url=""
+while [ $# -gt 0 ]; do case "$1" in -o) out=$2; shift 2 ;; -*) shift ;; *) url=$1; shift ;; esac; done
+src="${dist}/\${url##*/}"
+[ -f "$src" ] || exit 22
+if [ -n "$out" ]; then cp "$src" "$out"; else cat "$src"; fi
+`);
+  chmodSync(path.join(bin, 'curl'), 0o755);
+}
+
+function stubUname(root, machine) {
+  const bin = path.join(root, 'bin');
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(path.join(bin, 'uname'), `#!/bin/sh\ncase "$1" in -m) echo ${machine} ;; -s) echo Linux ;; *) echo Linux ;; esac\n`);
+  chmodSync(path.join(bin, 'uname'), 0o755);
+}
+
+// Runs only the Node.js step: with no key given the installer stops right after it.
+function runNodeStep(root, extra = {}) {
+  const prefix = path.join(root, 'optnode');
+  const bindir = path.join(root, 'localbin');
+  const r = run(root, {
+    DOZI_FORCE_NODE_INSTALL: '1', DOZI_NODE_PREFIX: prefix, DOZI_NODE_BINDIR: bindir, DOZI_EMAIL: 'me@example.com', ...extra,
+  });
+  return { ...r, prefix, bindir };
+}
+
+test('Node.js is installed from the official tarball when it is missing or too old', opts, () => {
+  const root = sandbox();
+  stubCurl(root, fakeDist(root));
+  const r = runNodeStep(root);
+  assert.match(r.out, /Node\.js v22\.99\.0 kuruldu/, r.out);
+  for (const bin of ['node', 'npm', 'npx']) {
+    assert.ok(existsSync(path.join(r.bindir, bin)), `${bin} is linked into the bin folder`);
+  }
+  assert.ok(existsSync(path.join(r.prefix, 'node-v22.99.0-linux-x64/bin/node')));
+});
+
+test('the right build is picked for the processor (arm64 and armv7l too)', opts, () => {
+  for (const [machine, arch] of [['aarch64', 'arm64'], ['armv7l', 'armv7l'], ['x86_64', 'x64']]) {
+    const root = sandbox();
+    stubCurl(root, fakeDist(root, { arch }));
+    stubUname(root, machine);
+    const r = runNodeStep(root);
+    assert.match(r.out, /Node\.js v22\.99\.0 kuruldu/, `${machine}: ${r.out}`);
+    assert.ok(existsSync(path.join(r.prefix, `node-v22.99.0-linux-${arch}`)), machine);
+  }
+});
+
+test('a download that does not match its checksum is rejected and nothing is installed', opts, () => {
+  const root = sandbox();
+  stubCurl(root, fakeDist(root, { wrongSum: true }));
+  const r = runNodeStep(root);
+  assert.notEqual(r.code, 0);
+  assert.match(r.out, /sağlama toplamı tutmuyor/);
+  assert.equal(existsSync(path.join(r.bindir, 'node')), false);
+  assert.equal(existsSync(r.prefix), false);
+});
+
+test('a processor without an official build gets a clear message', opts, () => {
+  const root = sandbox();
+  stubCurl(root, fakeDist(root));
+  stubUname(root, 'armv6l');
+  const r = runNodeStep(root);
+  assert.notEqual(r.code, 0);
+  assert.match(r.out, /armv6l/);
+  assert.match(r.out, /Raspberry Pi 2\/3\/4\/5/);
+});
+
+test('when nodejs.org cannot be reached it says so', opts, () => {
+  const root = sandbox();
+  stubCurl(root, path.join(root, 'empty-dist'));
+  const r = runNodeStep(root);
+  assert.notEqual(r.code, 0);
+  assert.match(r.out, /nodejs\.org'a ulaşılamadı/);
+});

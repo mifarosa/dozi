@@ -14,7 +14,8 @@
 #   DOZI_SA_PATH      servis hesabı anahtarı (JSON) dosyasının yolu
 #   DOZI_NO_SYSTEMD=1 servis kurma, yalnızca hazırla
 #   DOZI_SKIP_CHECK=1 Firestore bağlantı denemesini atla
-#   Testler için: DOZI_SKIP_NPM=1, DOZI_NO_SUDO=1, DOZI_UNIT_PATH=<dosya> (bkz. server/test/install.test.mjs)
+#   Testler için: DOZI_SKIP_NPM=1, DOZI_NO_SUDO=1, DOZI_UNIT_PATH=<dosya>, DOZI_FORCE_NODE_INSTALL=1,
+#   DOZI_NODE_PREFIX, DOZI_NODE_BINDIR (bkz. server/test/install.test.mjs)
 set -euo pipefail
 
 REPO_URL=${DOZI_REPO:-https://github.com/mifarosa/dozi}
@@ -61,18 +62,55 @@ ask() {
 node_ok() {
   command -v node >/dev/null 2>&1 && node -e '
     const [a, b] = process.versions.node.split(".").map(Number);
-    process.exit(a > 20 || (a === 20 && b >= 6) ? 0 : 1)'
+    process.exit(a > 20 || (a === 20 && b >= 6) ? 0 : 1)' >/dev/null 2>&1
+}
+
+# Resmî Node.js 22'yi nodejs.org'dan indirip kurar. apt'ye ve NodeSource'a bağlı değil: onlar
+# işletim sistemine göre sessizce eski sürümü bırakabiliyor (Ubuntu 20.04'te Node 10 gibi).
+install_node() {
+  local arch base sums line want file tmp prefix bindir dir
+  [ "$(uname -s)" = Linux ] || die "Bu betik yalnızca Linux içindir."
+  case "$(uname -m)" in
+    x86_64|amd64)  arch=x64 ;;
+    aarch64|arm64) arch=arm64 ;;
+    armv7l)        arch=armv7l ;;
+    *) die "Bu cihazın işlemcisi ($(uname -m)) için resmî Node.js 22 yok. Raspberry Pi 2/3/4/5, 64 bit Linux ya da armv7 bir cihaz gerekir." ;;
+  esac
+  base=https://nodejs.org/dist/latest-v22.x
+  sums=$(curl -fsSL "$base/SHASUMS256.txt") || die "nodejs.org'a ulaşılamadı. İnternet bağlantısını kontrol et."
+  line=$(printf '%s\n' "$sums" | grep -E " node-v[0-9.]+-linux-$arch\.tar\.gz$" | head -n1 || true)
+  [ -n "$line" ] || die "nodejs.org'da $arch için Node.js 22 bulunamadı."
+  want=${line%% *}
+  file=${line##* }
+  tmp=$(mktemp -d)
+  curl -fsSL "$base/$file" -o "$tmp/$file" || { rm -rf "$tmp"; die "$file indirilemedi."; }
+  [ "$(sha256sum "$tmp/$file" | cut -d' ' -f1)" = "$want" ] \
+    || { rm -rf "$tmp"; die "İndirilen Node.js dosyasının sağlama toplamı tutmuyor (bozuk indirme). Tekrar dene."; }
+  prefix=${DOZI_NODE_PREFIX:-/opt}
+  bindir=${DOZI_NODE_BINDIR:-/usr/local/bin}
+  dir=$prefix/${file%.tar.gz}
+  as_root mkdir -p "$prefix" "$bindir"
+  as_root tar -xzf "$tmp/$file" -C "$prefix"
+  for bin in node npm npx; do as_root ln -sf "$dir/bin/$bin" "$bindir/$bin"; done
+  rm -rf "$tmp"
+  # Eski bir Node yolun önündeyse bile bu betik yenisini kullansın.
+  export PATH="$bindir:$PATH"
+  hash -r
 }
 
 say "1/6 Node.js"
-if node_ok; then
+if [ "${DOZI_FORCE_NODE_INSTALL:-}" != 1 ] && node_ok; then
   ok "Node.js $(node --version) var"
 else
-  command -v apt-get >/dev/null 2>&1 || die "Node.js 20.6 ya da üstü gerekli ve otomatik kuramıyorum (apt yok). Elle kur: https://nodejs.org"
-  warn "Node.js 20.6+ yok, Node.js 22 kuruluyor (NodeSource). Şifre sorabilir."
-  curl -fsSL https://deb.nodesource.com/setup_22.x | as_root bash -
-  as_root apt-get install -y nodejs
-  node_ok || die "Node.js kuruldu ama sürüm yetersiz: $(node --version 2>&1)"
+  if command -v node >/dev/null 2>&1 && node_ok; then
+    warn "Node.js zorla yeniden kuruluyor (DOZI_FORCE_NODE_INSTALL=1)."
+  elif command -v node >/dev/null 2>&1; then
+    warn "Mevcut Node.js $(node --version 2>&1 | head -n1) çok eski (gerekli: 20.6 ya da üstü); resmî Node.js 22 kuruluyor."
+  else
+    warn "Node.js yok; resmî Node.js 22 kuruluyor."
+  fi
+  install_node
+  node_ok || die "Node.js kuruldu ama çalıştırılamadı ya da sürümü yetersiz (bulunan: $(command -v node || echo yok), $(node --version 2>&1 | head -n1)). İşletim sistemin çok eskiyse (glibc 2.28 altı) Node 22 çalışmaz: Ubuntu 20.04+, Debian 10+ ya da Raspberry Pi OS Buster+ gerekir."
   ok "Node.js $(node --version) kuruldu"
 fi
 
