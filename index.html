@@ -24,9 +24,9 @@
 </head>
 <body>
   <header class="topbar">
-    <button id="back" class="icon-btn" aria-label="Geri" hidden>&#8592;</button>
+    <button id="back" class="icon-btn" aria-label="Geri" data-i18n-aria="back" hidden>&#8592;</button>
     <h1>Do<span>zi</span></h1>
-    <button id="add" class="icon-btn" aria-label="İlaç ekle">+</button>
+    <button id="add" class="icon-btn" aria-label="İlaç ekle" data-i18n-aria="add.aria">+</button>
   </header>
 
   <div id="cloud-bar" class="cloud-bar" hidden></div>
@@ -35,157 +35,157 @@
     <div id="app"></div>
 
     <div class="coffee">
-      <p>Dozi ücretsiz ve reklamsız.</p>
+      <p data-i18n="coffee.text">Dozi ücretsiz ve reklamsız.</p>
       <a class="coffee-pill" href="https://buymeacoffee.com/mifarosa" target="_blank" rel="noopener">
-        <span aria-hidden="true">&#9749;</span> Bana bir kahve ısmarla
+        <span aria-hidden="true">&#9749;</span> <span data-i18n="coffee.button">Bana bir kahve ısmarla</span>
       </a>
     </div>
   </main>
 
-  <nav class="tabbar" aria-label="Menü">
+  <nav class="tabbar" aria-label="Menü" data-i18n-aria="nav.label">
     <button class="tab active" data-view="meds">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.7 8.7l4.6 6.6"/></svg>
-      <span>İlaçlar</span>
+      <span data-i18n="nav.meds">İlaçlar</span>
     </button>
     <button class="tab" data-view="calendar">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-      <span>Takvim</span>
+      <span data-i18n="nav.calendar">Takvim</span>
     </button>
     <button class="tab" data-view="settings">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg>
-      <span>Ayarlar</span>
+      <span data-i18n="nav.settings">Ayarlar</span>
     </button>
   </nav>
 
   <dialog id="choose-dialog">
-    <h2>Ne eklemek istiyorsun?</h2>
+    <h2 data-i18n="choose.title">Ne eklemek istiyorsun?</h2>
     <button type="button" class="choice" data-choose="med">
-      <strong>Düzenli ilaç</strong>
-      <span>Kutu, blister ve hap sayısını takip et</span>
+      <strong data-i18n="choose.med">Düzenli ilaç</strong>
+      <span data-i18n="choose.med.sub">Kutu, blister ve hap sayısını takip et</span>
     </button>
     <button type="button" class="choice" data-choose="extra">
-      <strong>Günlük kayıt</strong>
-      <span>Vitamin, bitki çayı gibi bir şey içtim</span>
+      <strong data-i18n="choose.extra">Günlük kayıt</strong>
+      <span data-i18n="choose.extra.sub">Vitamin, bitki çayı gibi bir şey içtim</span>
     </button>
     <button type="button" class="choice" id="choose-backfill" data-choose="backfill">
-      <strong>Unutulan doz</strong>
-      <span>Geçmiş bir güne ilaç ekle</span>
+      <strong data-i18n="choose.backfill">Unutulan doz</strong>
+      <span data-i18n="choose.backfill.sub">Geçmiş bir güne ilaç ekle</span>
     </button>
     <div class="actions">
-      <button type="button" id="choose-cancel" class="btn ghost">Vazgeç</button>
+      <button type="button" id="choose-cancel" class="btn ghost" data-i18n="cancel">Vazgeç</button>
     </div>
   </dialog>
 
   <dialog id="form-dialog">
     <form id="med-form" method="dialog">
-      <h2 id="form-title">Yeni ilaç</h2>
+      <h2 id="form-title" data-i18n="form.new">Yeni ilaç</h2>
 
-      <label>İlaç adı
-        <input name="name" required maxlength="40" placeholder="Örn. Vitamin D">
+      <label><span data-i18n="form.name">İlaç adı</span>
+        <input name="name" required maxlength="40" placeholder="Örn. Vitamin D" data-i18n-placeholder="form.name.placeholder">
       </label>
 
       <div class="grid2">
-        <label>Kutuda kaç blister?
+        <label><span data-i18n="form.blisters">Kutuda kaç blister?</span>
           <input name="blisters" type="number" min="1" max="50" value="2" required inputmode="numeric">
         </label>
-        <label>Blisterde kaç hap?
+        <label><span data-i18n="form.perBlister">Blisterde kaç hap?</span>
           <input name="perBlister" type="number" min="1" max="100" value="14" required inputmode="numeric">
         </label>
       </div>
 
       <fieldset>
-        <legend>Kaldığın yer</legend>
+        <legend data-i18n="form.position">Kaldığın yer</legend>
         <div class="grid2">
-          <label>Kullandığım blister
+          <label><span data-i18n="form.curBlister">Kullandığım blister</span>
             <input name="curBlister" type="number" min="1" value="1" required inputmode="numeric">
           </label>
-          <label>Kullandığım hap
+          <label><span data-i18n="form.curPill">Kullandığım hap</span>
             <input name="curPill" type="number" min="1" value="1" required inputmode="numeric">
           </label>
         </div>
-        <label>O hapın durumu
+        <label><span data-i18n="form.curPart">O hapın durumu</span>
           <select name="curPart">
-            <option value="0">Tam (hiç kullanılmamış)</option>
-            <option value="3">&#190; kaldı</option>
-            <option value="2">Yarısı kaldı</option>
-            <option value="1">&#188; kaldı</option>
+            <option value="0" data-i18n="form.part.0">Tam (hiç kullanılmamış)</option>
+            <option value="3" data-i18n="form.part.3">¾ kaldı</option>
+            <option value="2" data-i18n="form.part.2">Yarısı kaldı</option>
+            <option value="1" data-i18n="form.part.1">¼ kaldı</option>
           </select>
         </label>
       </fieldset>
 
       <div class="grid2">
-        <label>Her alışta
+        <label><span data-i18n="form.dose">Her alışta</span>
           <select name="dose">
-            <option value="1">&#188; hap</option>
-            <option value="2">Yarım hap</option>
-            <option value="4" selected>1 hap</option>
-            <option value="6">1,5 hap</option>
-            <option value="8">2 hap</option>
+            <option value="1" data-i18n="dose.1">¼ hap</option>
+            <option value="2" data-i18n="dose.2">Yarım hap</option>
+            <option value="4" selected data-i18n="dose.4">1 hap</option>
+            <option value="6" data-i18n="dose.6">1,5 hap</option>
+            <option value="8" data-i18n="dose.8">2 hap</option>
           </select>
         </label>
-        <label>Günde kaç kez?
+        <label><span data-i18n="form.perDay">Günde kaç kez?</span>
           <input name="perDay" type="number" min="1" max="12" value="1" required inputmode="numeric">
         </label>
       </div>
 
       <fieldset>
-        <legend>Hatırlatma saatleri</legend>
+        <legend data-i18n="form.times">Hatırlatma saatleri</legend>
         <div id="time-rows"></div>
-        <button type="button" id="add-time" class="btn ghost small">+ Saat ekle</button>
-        <p class="hint">Bildirimler uygulama açıkken ya da tarayıcı arka planda canlı tutarken gelir; telefon uygulamayı tamamen kapatırsa gecikebilir.</p>
+        <button type="button" id="add-time" class="btn ghost small" data-i18n="form.addTime">+ Saat ekle</button>
+        <p class="hint" data-i18n="form.timesHint">Bildirimler uygulama açıkken ya da tarayıcı arka planda canlı tutarken gelir; telefon uygulamayı tamamen kapatırsa gecikebilir.</p>
       </fieldset>
 
       <p id="form-error" class="error" hidden></p>
 
       <div class="actions sticky">
-        <button type="button" id="form-cancel" class="btn ghost">Vazgeç</button>
-        <button type="submit" class="btn primary">Kaydet</button>
+        <button type="button" id="form-cancel" class="btn ghost" data-i18n="cancel">Vazgeç</button>
+        <button type="submit" class="btn primary" data-i18n="save">Kaydet</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="backfill-dialog">
     <form id="backfill-form" method="dialog">
-      <h2>Unutulan dozu ekle</h2>
+      <h2 data-i18n="backfill.title">Unutulan dozu ekle</h2>
 
-      <label>İlaç
+      <label><span data-i18n="backfill.med">İlaç</span>
         <select name="med"></select>
       </label>
-      <label>Gün
+      <label><span data-i18n="day">Gün</span>
         <input name="date" type="date" required>
       </label>
-      <label>Saat
+      <label><span data-i18n="time">Saat</span>
         <input name="time" type="time" required>
       </label>
-      <label>Miktar
+      <label><span data-i18n="backfill.amount">Miktar</span>
         <select name="q">
-          <option value="1">&#188; hap</option>
-          <option value="2">Yarım hap</option>
-          <option value="4">1 hap</option>
-          <option value="6">1,5 hap</option>
-          <option value="8">2 hap</option>
+          <option value="1" data-i18n="dose.1">¼ hap</option>
+          <option value="2" data-i18n="dose.2">Yarım hap</option>
+          <option value="4" data-i18n="dose.4">1 hap</option>
+          <option value="6" data-i18n="dose.6">1,5 hap</option>
+          <option value="8" data-i18n="dose.8">2 hap</option>
         </select>
       </label>
 
       <p id="backfill-error" class="error" hidden></p>
 
       <div class="actions sticky">
-        <button type="button" id="backfill-cancel" class="btn ghost">Vazgeç</button>
-        <button type="submit" class="btn primary">Ekle</button>
+        <button type="button" id="backfill-cancel" class="btn ghost" data-i18n="cancel">Vazgeç</button>
+        <button type="submit" class="btn primary" data-i18n="backfill.add">Ekle</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="newbox-dialog">
     <form id="newbox-form" method="dialog">
-      <h2>Yeni kutu</h2>
+      <h2 data-i18n="newbox.title">Yeni kutu</h2>
       <p id="newbox-note" class="hint"></p>
 
       <div class="grid2">
-        <label>Kutuda kaç blister?
+        <label><span data-i18n="form.blisters">Kutuda kaç blister?</span>
           <input name="blisters" type="number" min="1" max="50" required inputmode="numeric">
         </label>
-        <label>Blisterde kaç hap?
+        <label><span data-i18n="form.perBlister">Blisterde kaç hap?</span>
           <input name="perBlister" type="number" min="1" max="100" required inputmode="numeric">
         </label>
       </div>
@@ -194,44 +194,44 @@
         <input name="took" type="checkbox">
         <span id="newbox-took-label">Bugünkü dozu içtim</span>
       </label>
-      <label id="newbox-time-row" hidden>Saat
+      <label id="newbox-time-row" hidden><span data-i18n="time">Saat</span>
         <input name="time" type="time">
       </label>
 
       <div class="actions sticky">
-        <button type="button" id="newbox-cancel" class="btn ghost">Vazgeç</button>
-        <button type="submit" class="btn primary">Yeni kutuya geç</button>
+        <button type="button" id="newbox-cancel" class="btn ghost" data-i18n="cancel">Vazgeç</button>
+        <button type="submit" class="btn primary" data-i18n="newbox.switch">Yeni kutuya geç</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="extra-dialog">
     <form id="extra-form" method="dialog">
-      <h2>Ne içtin?</h2>
+      <h2 data-i18n="extra.title">Ne içtin?</h2>
 
-      <label>Adı
-        <input name="name" required maxlength="40" autocomplete="off" placeholder="Yaz ya da aşağıdan seç">
+      <label><span data-i18n="extra.name">Adı</span>
+        <input name="name" required maxlength="40" autocomplete="off" placeholder="Yaz ya da aşağıdan seç" data-i18n-placeholder="extra.placeholder">
       </label>
-      <div id="extra-chips" class="chips wrap" aria-label="Önerilenler"></div>
+      <div id="extra-chips" class="chips wrap" aria-label="Önerilenler" data-i18n-aria="extra.suggestions"></div>
 
-      <label>Türü
+      <label><span data-i18n="extra.kind">Türü</span>
         <select name="kind">
-          <option value="supplement">Vitamin / takviye</option>
-          <option value="tea">Bitki çayı</option>
-          <option value="other">Diğer</option>
+          <option value="supplement" data-i18n="kind.supplement">Vitamin / takviye</option>
+          <option value="tea" data-i18n="kind.tea">Bitki çayı</option>
+          <option value="other" data-i18n="kind.other">Diğer</option>
         </select>
       </label>
 
-      <label>Gün
+      <label><span data-i18n="day">Gün</span>
         <input name="date" type="date" required>
       </label>
-      <label>Saat
+      <label><span data-i18n="time">Saat</span>
         <input name="time" type="time" required>
       </label>
 
       <div class="actions sticky">
-        <button type="button" id="extra-cancel" class="btn ghost">Vazgeç</button>
-        <button type="submit" class="btn primary">Kaydet</button>
+        <button type="button" id="extra-cancel" class="btn ghost" data-i18n="cancel">Vazgeç</button>
+        <button type="submit" class="btn primary" data-i18n="save">Kaydet</button>
       </div>
     </form>
   </dialog>

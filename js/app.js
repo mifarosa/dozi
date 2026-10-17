@@ -82,6 +82,8 @@ tabs.forEach((tab) => tab.addEventListener('click', () => {
   refresh();
 }));
 
+// First, so every later piece of text is drawn in the chosen language.
+initSettings();
 initChooser(addBtn, { openMedForm, openExtraForm, openBackfill });
 initMedForm();
 initExtraForm();
@@ -90,7 +92,6 @@ initNewBoxForm();
 // Registered before the render listener so a change is pushed first, then drawn.
 initCloudSync();
 initPushUi();
-initSettings();
 on('commit', render);
 on('refresh', render);
 

@@ -13,7 +13,8 @@
 - Saat çizelgesi: her satır bir gün, noktalar o gün kaçta ne aldığını gösterir (takvimde ay, ilaç ekranında son 14 gün ve hatırlatma saatleri)
 - Takvim: ay görünümü; altında yalnızca bir hafta (Pazartesi'den itibaren) listelenir, oklarla önceki haftalara gidilir. Bir güne dokununca o gün ayrı bir "Seçili gün" kartında saatleriyle görünür; kayıt silinebilir, o güne doz eklenebilir
 - Ek kayıtlar: sağ üstteki + tuşu "Düzenli ilaç" ya da "Günlük kayıt" seçtirir; vitamin, takviye, bitki çayı gibi şeyler hazır ve son kullanılan önerilerle, istenirse geçmiş bir güne kaydedilir
-- Ayarlar sekmesi: tema (sistem / açık / koyu), vurgu rengi, sunucu bildirimlerini açma-kapatma ve test bildirimi, verileri JSON olarak indirme. Tercihler cihazda saklanır
+- Dil: Türkçe ve İngilizce. "Sistem" telefonun diline uyar (Türkçe telefon Türkçe, diğerleri İngilizce). Sunucu bildirimleri de cihazın diliyle gelir
+- Ayarlar sekmesi: tema (sistem / açık / koyu), vurgu rengi, dil, sunucu bildirimlerini açma-kapatma ve test bildirimi, verileri JSON olarak indirme. Tercihler cihazda saklanır
 - İsteğe bağlı Firebase yedeği: Google ile giriş yapınca veriler Firestore'a yedeklenir, cihazlar arası senkronize olur
 - Veriler cihazda (localStorage) saklanır; çevrimdışı çalışır, ana ekrana eklenebilir
 
@@ -56,6 +57,7 @@ Derleme yok; `js/` altındaki dosyalar tarayıcıda ES modülü olarak çalış�
 | `js/reminderLoop.js`, `js/notifications.js` | Hatırlatma zamanlayıcısı ve bildirimler |
 | `js/cloudSync.js`, `js/cloud.js`, `js/sync.js` | Bulut yedeği: arayüz çubuğu, Firebase sarmalayıcı, birleştirme kararları |
 | `js/push.js`, `js/pushUi.js`, `js/push-config.js` | Sunucu bildirimleri: cihazı abone etme, ayarlardaki bildirim bölümü |
+| `js/lang.js`, `js/i18n.js`, `js/i18n/tr.js`, `js/i18n/en.js`, `js/langUi.js` | Çeviri: seçili dil, `t('anahtar')` ile metinler, `index.html`'deki `data-i18n` öğeleri. Yeni dil eklemek için `js/i18n/` altına bir dosya ve `lang.js`'e bir satır yeter; test iki dilin aynı anahtarlara sahip olduğunu denetler |
 | `js/prefs.js`, `js/settingsUi.js`, `js/views/settings.js` | Ayarlar: tema ve renk tercihleri (`data-theme` / `data-accent`), veri indirme, ekran |
 | `server/` | Evdeki cihazda çalışan bildirim servisi (kendi `README.md`'si var) |
 | `js/store.js`, `js/reminders.js`, `js/history.js`, `js/dates.js`, `js/html.js` | Saf mantık ve yardımcılar (testlenir) |

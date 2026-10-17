@@ -5,6 +5,7 @@ import {
   enablePush, disablePush, sendTest, friendlyPushError,
 } from './push.js';
 import { esc } from './html.js';
+import { t } from './i18n.js';
 
 const NOTE_MS = 12000;
 
@@ -28,18 +29,16 @@ export function pushSectionHtml() {
   const off = busy ? 'disabled' : '';
   const message = (text) => `<p class="setting-note">${esc(note || text)}</p>`;
   return {
-    hidden: message(pushConfigured
-      ? 'Bildirim için önce Google ile giriş yap.'
-      : 'Sunucu bildirimleri bu kurulumda ayarlı değil.'),
-    'needs-install': message('Bildirim için Dozi\'yi ana ekrana ekle (Paylaş → Ana Ekrana Ekle) ve oradan aç.'),
-    unsupported: message('Bu tarayıcı arka plan bildirimini desteklemiyor.'),
-    denied: message('Bildirim izni kapalı. Telefon ayarlarından Dozi için bildirimi aç.'),
-    ready: `${message('Dozi kapalıyken de hatırlatma al.')}
-      <button type="button" class="btn primary small" data-push="on" ${off}>Bildirimleri aç</button>`,
-    on: `${message('Bildirimler açık ✓')}
+    hidden: message(t(pushConfigured ? 'push.signInFirst' : 'push.notConfigured')),
+    'needs-install': message(t('push.needsInstall')),
+    unsupported: message(t('push.unsupported')),
+    denied: message(t('push.denied')),
+    ready: `${message(t('push.ready'))}
+      <button type="button" class="btn primary small" data-push="on" ${off}>${t('push.enable')}</button>`,
+    on: `${message(t('push.on'))}
       <div class="setting-actions">
-        <button type="button" class="btn ghost small" data-push="test" ${off}>Test bildirimi gönder</button>
-        <button type="button" class="btn ghost small" data-push="off" ${off}>Kapat</button>
+        <button type="button" class="btn ghost small" data-push="test" ${off}>${t('push.test')}</button>
+        <button type="button" class="btn ghost small" data-push="off" ${off}>${t('push.disable')}</button>
       </div>`,
   }[status];
 }
@@ -72,13 +71,13 @@ async function run(action) {
   try {
     if (action === 'on') {
       const result = await enablePush(state.user);
-      setNote(result === 'on' ? 'Bildirimler açıldı ✓' : '');
+      setNote(result === 'on' ? t('push.enabled') : '');
     } else if (action === 'off') {
       await disablePush();
-      setNote('Bildirimler kapatıldı.');
+      setNote(t('push.disabled'));
     } else if (action === 'test') {
       await sendTest(state.user);
-      setNote('Test istendi. Birkaç saniye içinde gelmezse sunucunun çalıştığını kontrol et.');
+      setNote(t('push.testSent'));
     }
   } catch (err) {
     console.error('Dozi push:', err);
@@ -87,6 +86,13 @@ async function run(action) {
     busy = false;
     await update();
   }
+}
+
+// Tell the server which language this device uses now (it writes the reminders).
+export async function syncPushRecord() {
+  if (!pushConfigured || !state.user) return;
+  const sub = await getSubscription().catch(() => null);
+  if (sub && readEnvironment().permission === 'granted') await saveSubscription(state.user, sub).catch(() => {});
 }
 
 export function initPushUi() {

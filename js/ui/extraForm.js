@@ -3,7 +3,7 @@ import { state, commit } from '../state.js';
 import { newId } from '../store.js';
 import { dayKey, hhmm } from '../dates.js';
 import {
-  EXTRA_KINDS, recentExtras, resolveExtraTime, suggestionChips,
+  isExtraKind, recentExtras, resolveExtraTime, suggestionChips,
 } from '../history.js';
 import { esc } from '../html.js';
 
@@ -46,7 +46,7 @@ export function initExtraForm() {
     state.extras.push({
       id: newId(),
       name: form.name.value.trim(),
-      kind: EXTRA_KINDS[form.kind.value] ? form.kind.value : 'other',
+      kind: isExtraKind(form.kind.value) ? form.kind.value : 'other',
       t: resolveExtraTime(form.date.value, form.time.value),
     });
     dialog.close();

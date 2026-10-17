@@ -2,11 +2,12 @@
 // (Monday first): its hour chart and its entries. Tapping a day opens that day in its own card.
 import { state } from '../state.js';
 import {
-  KIND_LABELS, buildEntries, groupByDay, dayKinds, monthEntries,
+  kindLabels, buildEntries, groupByDay, dayKinds, monthEntries,
 } from '../history.js';
 import {
-  dayKey, addDays, startOfWeek, dayFmt, monthFmt, formatTime, DAY_NAMES,
+  dayKey, addDays, startOfWeek, dayFmt, monthFmt, formatTime,
 } from '../dates.js';
+import { t, dayNames } from '../i18n.js';
 import { esc } from '../html.js';
 import { weekRows, hasMarks } from '../timeline.js';
 import {
@@ -16,7 +17,7 @@ import { timeChartHtml } from './timeChart.js';
 
 const removeButton = (e) => {
   const attr = e.medId ? `data-remove-med="${esc(e.medId)}"` : `data-remove-extra="${esc(e.extraId)}"`;
-  return `<button class="icon-btn mini" ${attr} data-t="${e.t}" aria-label="Kaydı sil">&times;</button>`;
+  return `<button class="icon-btn mini" ${attr} data-t="${e.t}" aria-label="${t('cal.removeEntry')}">&times;</button>`;
 };
 
 // A card per entry, used by the week list.
@@ -43,7 +44,7 @@ function gridHtml(byDay, now, week) {
   const todayKey = dayKey(now);
   const lastDay = new Date(calMonth.getFullYear(), m + 1, 0);
 
-  let grid = DAY_NAMES.map((d) => `<span class="cal-dow">${d}</span>`).join('');
+  let grid = dayNames().map((d) => `<span class="cal-dow">${d}</span>`).join('');
   for (let w = startOfWeek(calMonth); w <= lastDay; w = addDays(w, 7)) {
     for (let i = 0; i < 7; i++) {
       const d = addDays(w, i);
@@ -53,7 +54,7 @@ function gridHtml(byDay, now, week) {
         k === todayKey ? 'is-today' : '', k === selectedDay ? 'selected' : '',
         inWeek(d, week.start) ? 'in-week' : ''].join(' ');
       const dots = dayKinds(items).map((kind) => `<i class="dot-${kind}"></i>`).join('');
-      const label = `${dayFmt.format(d)}${items.length ? `, ${items.length} kayıt` : ''}`;
+      const label = `${dayFmt.format(d)}${items.length ? `, ${t('cal.entries', { n: items.length })}` : ''}`;
       grid += `<button type="button" class="${cls}" data-day="${k}" aria-label="${label}">
         <span>${d.getDate()}</span><span class="dots">${dots}</span></button>`;
     }
@@ -64,9 +65,9 @@ function gridHtml(byDay, now, week) {
 // "Bu hafta · 12–18 Ekim" with arrows. The next arrow stops at this week.
 function weekHeadHtml(week) {
   return `<div class="week-head">
-      <button type="button" class="icon-btn mini" data-week="prev" aria-label="Önceki hafta">&#8249;</button>
-      <h2 class="section-title">${week.isCurrent ? 'Bu hafta' : 'Hafta'} · ${weekLabel(week.start)}</h2>
-      <button type="button" class="icon-btn mini" data-week="next" aria-label="Sonraki hafta" ${week.isCurrent ? 'disabled' : ''}>&#8250;</button>
+      <button type="button" class="icon-btn mini" data-week="prev" aria-label="${t('cal.prevWeek')}">&#8249;</button>
+      <h2 class="section-title">${week.isCurrent ? t('cal.thisWeek') : t('cal.week')} · ${weekLabel(week.start)}</h2>
+      <button type="button" class="icon-btn mini" data-week="next" aria-label="${t('cal.nextWeek')}" ${week.isCurrent ? 'disabled' : ''}>&#8250;</button>
     </div>`;
 }
 
@@ -78,13 +79,13 @@ function chartCardHtml(entries, now, week) {
       rows,
       selectedDay: state.selectedDay,
       todayKey: dayKey(now),
-      kinds: Object.keys(KIND_LABELS),
-      label: `Saat çizelgesi, ${weekLabel(week.start)}`,
+      kinds: Object.keys(kindLabels()),
+      label: t('cal.chartLabel', { week: weekLabel(week.start) }),
     })
-    : '<p class="empty-note">Bu hafta çizelge için kayıt yok.</p>';
+    : `<p class="empty-note">${t('cal.chartEmpty')}</p>`;
   return `<section class="card chart-card">
-      <h2 class="section-title">Saat çizelgesi</h2>
-      <p class="med-sub">Her satır bir gün, noktalar o gün kaçta kaydettiğini gösterir. Bir güne dokun.</p>
+      <h2 class="section-title">${t('cal.chartTitle')}</h2>
+      <p class="med-sub">${t('cal.chartHelp')}</p>
       ${body}
     </section>`;
 }
@@ -97,13 +98,13 @@ function dayCardHtml(day, items, now) {
       <span class="day-item"><strong>${esc(e.name)}</strong><span class="med-sub">${esc(e.detail)}</span></span>
       ${removeButton(e)}
     </li>`).join('');
-  return `<section class="card day-card" aria-label="Seçili gün: ${esc(title)}">
+  return `<section class="card day-card" aria-label="${esc(t('cal.dayLabel', { title }))}">
       <div class="day-card-head">
-        <div><span class="day-badge">Seçili gün</span><h2>${title}</h2></div>
-        <button type="button" class="chip" data-cal="week">Haftaya dön</button>
+        <div><span class="day-badge">${t('cal.selectedDay')}</span><h2>${title}</h2></div>
+        <button type="button" class="chip" data-cal="week">${t('cal.backToWeek')}</button>
       </div>
-      ${rows ? `<ul class="day-list">${rows}</ul>` : '<p class="empty-note">Bu günde kayıt yok.</p>'}
-      ${canBackfill(day, now) ? `<button type="button" class="btn ghost small" data-backfill-day="${day}">Bu güne doz ekle</button>` : ''}
+      ${rows ? `<ul class="day-list">${rows}</ul>` : `<p class="empty-note">${t('cal.dayEmpty')}</p>`}
+      ${canBackfill(day, now) ? `<button type="button" class="btn ghost small" data-backfill-day="${day}">${t('cal.addDose')}</button>` : ''}
     </section>`;
 }
 
@@ -111,7 +112,7 @@ function dayCardHtml(day, items, now) {
 function weekListHtml(entries, week) {
   const list = entriesInWeek(entries, week.start);
   if (!list.length) {
-    return `<p class="empty-note">${entries.length ? 'Bu hafta kayıt yok.' : 'Henüz kayıt yok. İlaç aldığında ya da bir şey içtiğinde burada görünür.'}</p>`;
+    return `<p class="empty-note">${entries.length ? t('cal.weekEmpty') : t('cal.noEntries')}</p>`;
   }
   return list.map((e) => dayHeading(e, list) + entryRowHtml(e)).join('');
 }
@@ -130,15 +131,15 @@ export function calendarHtml() {
   return `
     <section class="card calendar">
       <div class="cal-head">
-        <button type="button" class="icon-btn" data-cal="prev" aria-label="Önceki ay">&#8249;</button>
+        <button type="button" class="icon-btn" data-cal="prev" aria-label="${t('cal.prevMonth')}">&#8249;</button>
         <h3>${monthFmt.format(calMonth)}</h3>
-        <button type="button" class="icon-btn" data-cal="next" aria-label="Sonraki ay" ${atCurrentMonth ? 'disabled' : ''}>&#8250;</button>
+        <button type="button" class="icon-btn" data-cal="next" aria-label="${t('cal.nextMonth')}" ${atCurrentMonth ? 'disabled' : ''}>&#8250;</button>
       </div>
       <div class="cal-grid">${gridHtml(byDay, now, week)}</div>
       <div class="cal-legend">
-        ${Object.entries(KIND_LABELS).map(([k, label]) => `<span><i class="dot-${k}"></i>${label}</span>`).join('')}
+        ${Object.entries(kindLabels()).map(([k, label]) => `<span><i class="dot-${k}"></i>${label}</span>`).join('')}
       </div>
-      <p class="cal-summary">${monthList.length ? `<b>${monthList.length}</b> kayıt · <b>${days}</b> gün` : 'Bu ay henüz kayıt yok.'}</p>
+      <p class="cal-summary">${monthList.length ? t('cal.summary', { n: monthList.length, d: days }) : t('cal.monthEmpty')}</p>
     </section>
 
     ${weekHeadHtml(week)}

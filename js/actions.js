@@ -10,12 +10,13 @@ import { openMedForm } from './ui/medForm.js';
 import { openBackfill } from './ui/backfillForm.js';
 import { openNewBox } from './ui/newBoxForm.js';
 import { dayKey } from './dates.js';
+import { t } from './i18n.js';
 
 function take(m, q) {
   const amount = Math.min(q, remainingQ(m));
   if (amount <= 0) return;
   // Today's dose is already complete: ask before logging an extra one.
-  if (dayComplete(m) && !confirm('Bugünkü dozunu zaten aldın. Yine de bir doz daha kaydedilsin mi?')) return;
+  if (dayComplete(m) && !confirm(t('confirm.extraDose'))) return;
   const input = document.getElementById('take-time');
   m.log.push({ t: resolveTakeTime(input ? input.value : ''), q: amount });
   commit();
@@ -58,7 +59,7 @@ function closeDay() {
 }
 
 function removeExtra(id) {
-  if (!confirm('Bu kayıt silinsin mi?')) return;
+  if (!confirm(t('confirm.removeExtra'))) return;
   state.extras = state.extras.filter((x) => x.id !== id);
   commit();
 }
@@ -66,14 +67,14 @@ function removeExtra(id) {
 function removeIntake(medId, t) {
   const med = findMed(medId);
   const at = med && med.log.findIndex((e) => e.t === t);
-  if (med && at >= 0 && confirm('Bu alış silinsin mi? Kalan hap sayısı güncellenir.')) {
+  if (med && at >= 0 && confirm(t('confirm.removeIntake'))) {
     med.log.splice(at, 1);
     commit();
   }
 }
 
 function deleteMed(m) {
-  if (!confirm(`"${m.name}" silinsin mi?`)) return;
+  if (!confirm(t('confirm.deleteMed', { name: m.name }))) return;
   state.meds = state.meds.filter((x) => x.id !== m.id);
   state.openId = null;
   commit();

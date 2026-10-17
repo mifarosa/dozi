@@ -1,6 +1,6 @@
 // Browser notification helpers. Reminders only fire while the app is open or kept
 // alive in the background, since Dozi has no server to push from.
-import { formatPills } from './store.js';
+import { t, pillsText } from './i18n.js';
 
 const supported = () => 'Notification' in window;
 const permission = () => (supported() ? Notification.permission : 'unsupported');
@@ -9,8 +9,8 @@ export const canNotify = () => permission() === 'granted';
 
 // Short note for the medicine screen when reminders cannot be shown.
 export function reminderNote() {
-  if (!supported()) return ' (bu tarayıcı bildirimi desteklemiyor)';
-  if (permission() === 'denied') return ' (bildirim izni kapalı)';
+  if (!supported()) return t('notify.noSupport');
+  if (permission() === 'denied') return t('notify.denied');
   return '';
 }
 
@@ -20,9 +20,9 @@ export function askPermission() {
 }
 
 export async function notify(m, time) {
-  const title = `${m.name} zamanı`;
+  const title = t('notify.title', { name: m.name });
   const options = {
-    body: `${formatPills(m.dose)} hap · ${time}`,
+    body: `${pillsText(m.dose)} · ${time}`,
     icon: 'icons/icon-192.png',
     tag: `dozi-${m.id}-${time}`,
   };

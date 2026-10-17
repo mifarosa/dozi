@@ -216,3 +216,20 @@ test('signing out (device removed) stops that phone only; the person\'s other ph
   await notifier.tick();
   assert.deepEqual(net.map((p) => p.to), ['ayse-tablet']);
 });
+
+test('each device gets the reminder and the test message in its own language', async () => {
+  const { notifier, net, setNow } = setup();
+  notifier.setSub('s1', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1 }); // no language: Turkish
+  notifier.setSub('s2', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1, lang: 'en' });
+  await notifier.tick();
+  const byDevice = Object.fromEntries(net.pushed.map((p) => [p.to, [p.title, p.body]]));
+  assert.deepEqual(byDevice.s1, ['Vitamin D zamanı', '1 hap · 08:00']);
+  assert.deepEqual(byDevice.s2, ['Time for Vitamin D', '1 pill · 08:00']);
+
+  net.pushed.length = 0;
+  notifier.setSub('s2', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1, lang: 'en', testAt: ist('2026-10-07T08:00:19') });
+  setNow('2026-10-07T08:00:25');
+  await notifier.tick();
+  assert.equal(net.pushed.length, 1);
+  assert.equal(net.pushed[0].body, 'Notifications are working ✓');
+});

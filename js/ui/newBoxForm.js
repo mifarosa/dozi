@@ -1,6 +1,7 @@
 // "New box": switch a medicine to a fresh box, optionally recording today's dose.
 import { findMed, commit } from '../state.js';
-import { remainingQ, formatPills } from '../store.js';
+import { remainingQ } from '../store.js';
+import { t, pillsText } from '../i18n.js';
 import { newBoxPrompt, endedLabel, startNewBox } from '../boxes.js';
 import { resolveTakeTime } from '../reminders.js';
 import { hhmm } from '../dates.js';
@@ -21,10 +22,10 @@ export function openNewBox(id) {
   const name = document.createElement('strong');
   name.textContent = m.name;
   const detail = remainingQ(m) > 0
-    ? `Kutuda ${formatPills(remainingQ(m))} hap kaldı; yeni kutuya geçince bunlar sayılmaz.`
-    : (prompt ? `Önceki kutu ${endedLabel(prompt.daysAgo)}.` : '');
+    ? t('newbox.left', { amount: pillsText(remainingQ(m)) })
+    : (prompt ? t('newbox.previous', { ended: endedLabel(prompt.daysAgo) }) : '');
   document.getElementById('newbox-note').replaceChildren(name, detail ? ` · ${detail}` : '');
-  document.getElementById('newbox-took-label').textContent = `Bugünkü dozu içtim (${formatPills(m.dose)} hap)`;
+  document.getElementById('newbox-took-label').textContent = t('newbox.took', { amount: pillsText(m.dose) });
   form.blisters.value = m.blisters;
   form.perBlister.value = m.perBlister;
   // When the app asked "did you take today's?", the usual answer is yes.

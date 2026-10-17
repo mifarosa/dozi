@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildEntries, groupByDay, dayKinds, monthEntries, recentExtras,
-  suggestionChips, resolveExtraTime, SUGGESTIONS,
+  suggestionChips, resolveExtraTime, SUGGESTION_SETS,
 } from '../js/history.js';
 
 const at = (d, h, m = 0) => new Date(2026, 9, d, h, m).getTime();
@@ -42,7 +42,7 @@ test('suggestionChips puts recent entries first and fills with examples', () => 
   assert.deepEqual(chips.slice(0, 3).map((c) => c.name), ['Papatya çayı', 'C vitamini', 'Bilinmeyen']);
   assert.equal(chips.length, 10);
   assert.equal(new Set(chips.map((c) => c.name.toLowerCase())).size, chips.length);
-  assert.deepEqual(suggestionChips([]).map((c) => c.name), SUGGESTIONS.map((s) => s.name));
+  assert.deepEqual(suggestionChips([]).map((c) => c.name), SUGGESTION_SETS.tr.map((s) => s.name));
 });
 
 test('resolveExtraTime combines date and time; the future means now', () => {
