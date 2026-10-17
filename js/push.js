@@ -119,8 +119,11 @@ export async function disablePush() {
   await sub.unsubscribe();
 }
 
-export async function sendTest() {
+export async function sendTest(user) {
   const sub = await getSubscription();
   if (!sub) throw new Error('bu cihaz abone değil');
-  await cloud.requestPushTest(await subscriptionDocId(sub.endpoint));
+  // The test is an update, which the rules refuse for a record that does not exist
+  // (the server may have dropped it), so make sure this device's record is there first.
+  const id = await saveSubscription(user, sub);
+  await cloud.requestPushTest(id);
 }

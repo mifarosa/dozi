@@ -74,7 +74,7 @@ async function run(action) {
       await disablePush();
       setNote('Bildirimler kapatıldı.');
     } else if (action === 'test') {
-      await sendTest();
+      await sendTest(state.user);
       setNote('Test istendi. Birkaç saniye içinde gelmezse sunucunun çalıştığını kontrol et.');
     }
   } catch (err) {
