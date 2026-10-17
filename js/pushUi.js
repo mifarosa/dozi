@@ -1,13 +1,15 @@
-// The notification bar under the cloud bar: turn server reminders on/off and test them.
-import { state, on } from './state.js';
+// Notification controls shown in settings: turn server reminders on/off and test them.
+import { state, on, refresh as redrawApp } from './state.js';
 import {
   pushConfigured, pushStatus, readEnvironment, getSubscription, saveSubscription,
   enablePush, disablePush, sendTest, friendlyPushError,
 } from './push.js';
 import { esc } from './html.js';
 
-const bar = document.getElementById('push-bar');
 const NOTE_MS = 12000;
+
+// Only the settings screen shows these controls, so other screens need no redraw.
+const refresh = () => { if (state.view === 'settings') redrawApp(); };
 
 let status = 'hidden';
 let note = '';
@@ -17,28 +19,29 @@ let noteTimer = null;
 function setNote(text) {
   note = text;
   clearTimeout(noteTimer);
-  if (text) noteTimer = setTimeout(() => { note = ''; render(); }, NOTE_MS);
-  render();
+  if (text) noteTimer = setTimeout(() => { note = ''; refresh(); }, NOTE_MS);
+  refresh();
 }
 
-function render() {
-  bar.hidden = status === 'hidden';
-  if (bar.hidden) return;
+// The settings section. Empty states say why there is nothing to switch.
+export function pushSectionHtml() {
   const off = busy ? 'disabled' : '';
-  const message = (text) => `<span>${esc(note || text)}</span>`;
-  const html = {
+  const message = (text) => `<p class="setting-note">${esc(note || text)}</p>`;
+  return {
+    hidden: message(pushConfigured
+      ? 'Bildirim için önce Google ile giriş yap.'
+      : 'Sunucu bildirimleri bu kurulumda ayarlı değil.'),
     'needs-install': message('Bildirim için Dozi\'yi ana ekrana ekle (Paylaş → Ana Ekrana Ekle) ve oradan aç.'),
     unsupported: message('Bu tarayıcı arka plan bildirimini desteklemiyor.'),
     denied: message('Bildirim izni kapalı. Telefon ayarlarından Dozi için bildirimi aç.'),
-    ready: `${message('Dozi kapalıyken de hatırlatma al')}
-      <button class="btn primary small" data-push="on" ${off}>Bildirimleri aç</button>`,
+    ready: `${message('Dozi kapalıyken de hatırlatma al.')}
+      <button type="button" class="btn primary small" data-push="on" ${off}>Bildirimleri aç</button>`,
     on: `${message('Bildirimler açık ✓')}
-      <span class="push-actions">
-        <button class="btn ghost small" data-push="test" ${off}>Test</button>
-        <button class="btn ghost small" data-push="off" ${off}>Kapat</button>
-      </span>`,
+      <div class="setting-actions">
+        <button type="button" class="btn ghost small" data-push="test" ${off}>Test bildirimi gönder</button>
+        <button type="button" class="btn ghost small" data-push="off" ${off}>Kapat</button>
+      </div>`,
   }[status];
-  bar.innerHTML = html;
 }
 
 // Work out the current state and, when already subscribed, keep the server's record fresh.
@@ -59,13 +62,13 @@ async function update() {
   });
   // While push is on, the server sends the reminders; the on-device timer would double them.
   state.pushActive = status === 'on';
-  render();
+  refresh();
   if (sub && subscribed) saveSubscription(state.user, sub).catch(() => {});
 }
 
 async function run(action) {
   busy = true;
-  render();
+  refresh();
   try {
     if (action === 'on') {
       const result = await enablePush(state.user);
@@ -89,8 +92,8 @@ async function run(action) {
 export function initPushUi() {
   if (!pushConfigured) return;
   // Tap handler must call enablePush synchronously so the permission prompt is allowed.
-  bar.addEventListener('click', (e) => {
-    const action = e.target.closest('button')?.dataset.push;
+  document.getElementById('app').addEventListener('click', (e) => {
+    const action = e.target.closest('[data-push]')?.dataset.push;
     if (action && !busy) run(action);
   });
   on('user', update);

@@ -13,6 +13,7 @@
 - Saat çizelgesi: her satır bir gün, noktalar o gün kaçta ne aldığını gösterir (takvimde ay, ilaç ekranında son 14 gün ve hatırlatma saatleri)
 - Takvim: ay görünümü; altında yalnızca bir hafta (Pazartesi'den itibaren) listelenir, oklarla önceki haftalara gidilir. Bir güne dokununca o gün ayrı bir "Seçili gün" kartında saatleriyle görünür; kayıt silinebilir, o güne doz eklenebilir
 - Ek kayıtlar: sağ üstteki + tuşu "Düzenli ilaç" ya da "Günlük kayıt" seçtirir; vitamin, takviye, bitki çayı gibi şeyler hazır ve son kullanılan önerilerle, istenirse geçmiş bir güne kaydedilir
+- Ayarlar sekmesi: tema (sistem / açık / koyu), vurgu rengi, sunucu bildirimlerini açma-kapatma ve test bildirimi, verileri JSON olarak indirme. Tercihler cihazda saklanır
 - İsteğe bağlı Firebase yedeği: Google ile giriş yapınca veriler Firestore'a yedeklenir, cihazlar arası senkronize olur
 - Veriler cihazda (localStorage) saklanır; çevrimdışı çalışır, ana ekrana eklenebilir
 
@@ -54,7 +55,8 @@ Derleme yok; `js/` altındaki dosyalar tarayıcıda ES modülü olarak çalış�
 | `js/ui/` | Diyaloglar: ilaç formu, "ne içtin" formu, `+` seçim penceresi |
 | `js/reminderLoop.js`, `js/notifications.js` | Hatırlatma zamanlayıcısı ve bildirimler |
 | `js/cloudSync.js`, `js/cloud.js`, `js/sync.js` | Bulut yedeği: arayüz çubuğu, Firebase sarmalayıcı, birleştirme kararları |
-| `js/push.js`, `js/pushUi.js`, `js/push-config.js` | Sunucu bildirimleri: cihazı abone etme, bildirim çubuğu |
+| `js/push.js`, `js/pushUi.js`, `js/push-config.js` | Sunucu bildirimleri: cihazı abone etme, ayarlardaki bildirim bölümü |
+| `js/prefs.js`, `js/settingsUi.js`, `js/views/settings.js` | Ayarlar: tema ve renk tercihleri (`data-theme` / `data-accent`), veri indirme, ekran |
 | `server/` | Evdeki cihazda çalışan bildirim servisi (kendi `README.md`'si var) |
 | `js/store.js`, `js/reminders.js`, `js/history.js`, `js/dates.js`, `js/html.js` | Saf mantık ve yardımcılar (testlenir) |
 | `js/boxes.js`, `js/timeline.js`, `js/week.js` | Kutu geçişi ve unutulan doz mantığı; çizelge verisi; ekrandaki hafta (testlenir) |
