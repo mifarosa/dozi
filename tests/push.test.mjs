@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  urlBase64ToUint8Array, subscriptionDocId, pushStatus, readEnvironment,
+  urlBase64ToUint8Array, subscriptionDocId, pushStatus, readEnvironment, friendlyPushError,
 } from '../js/push.js';
 
 test('urlBase64ToUint8Array decodes a VAPID key (url-safe, unpadded)', () => {
@@ -68,4 +68,15 @@ test('readEnvironment detects support, iOS and the installed app', () => {
   delete tab.PushManager;
   delete tab.Notification;
   assert.deepEqual(readEnvironment(tab), { supported: false, permission: 'unsupported', ios: true, standalone: false });
+});
+
+test('friendlyPushError never leaks raw SDK text', () => {
+  const raw = Object.assign(new Error('Missing or insufficient permissions.'), { code: 'permission-denied' });
+  const text = friendlyPushError(raw);
+  assert.match(text, /giriş/);
+  assert.doesNotMatch(text, /insufficient|permission-denied/);
+  assert.match(friendlyPushError(Object.assign(new Error('x'), { code: 'unavailable' })), /Bağlantı/);
+  assert.match(friendlyPushError(Object.assign(new Error('x'), { name: 'NotAllowedError' })), /izni/);
+  assert.match(friendlyPushError(new Error('weird internal thing')), /Bir sorun oldu/);
+  assert.match(friendlyPushError(undefined), /Bir sorun oldu/);
 });
