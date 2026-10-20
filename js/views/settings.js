@@ -1,6 +1,7 @@
 // The settings screen: appearance, language, notifications and a data download.
 import { THEMES, ACCENTS, LANGUAGES } from '../prefs.js';
 import { pushSectionHtml } from '../pushUi.js';
+import { pushConfigured } from '../push.js';
 import { t } from '../i18n.js';
 import { esc } from '../html.js';
 
@@ -16,6 +17,14 @@ function accentHtml(prefs) {
     <button type="button" class="swatch" data-accent-pick="${a.id}" style="--swatch:${a.color}"
       aria-label="${esc(t(`accent.${a.id}`))}" aria-pressed="${a.id === prefs.accent}">${a.id === prefs.accent ? '&#10003;' : ''}</button>`);
   return `<div class="swatches" role="group" aria-label="${esc(t('settings.color'))}">${swatches.join('')}</div>`;
+}
+
+function nagHtml(prefs) {
+  return `<label class="check setting-check">
+      <input type="checkbox" data-nag ${prefs.nag ? 'checked' : ''}>
+      <span>${t('settings.nag')}</span>
+    </label>
+    <p class="setting-note">${t('settings.nagNote')}</p>`;
 }
 
 export function settingsHtml(prefs) {
@@ -35,6 +44,7 @@ export function settingsHtml(prefs) {
     <section class="card settings">
       <h2>${t('settings.notifications')}</h2>
       ${pushSectionHtml()}
+      ${pushConfigured ? nagHtml(prefs) : ''}
     </section>
 
     <section class="card settings">

@@ -166,3 +166,6 @@ Sunucu günlüğünde `test push to …: sent` satırını görürsün.
 ```sh
 npm test            # depo kökünden: uygulama ve sunucu mantığı (kök paket)
 ```
+
+## Saat başı tekrar
+Bir hatırlatma saatinde doz alınmadıysa sunucu aynı ilacı her saat başı yeniden bildirir (`js/` ile paylaşılan "alındı mı" mantığıyla; alınınca durur). Tekrarlar ilacın bir sonraki hatırlatma saatinde ya da 22:00'de biter. Her cihaz kaydındaki `nag: false` alanı o cihaz için tekrarı kapatır (uygulamada Ayarlar → Bildirimler). Tekrar anahtarı `uid|ilaç|08:00+N|gün` biçimindedir, gönderilenler `sent.json`'da tutulur.

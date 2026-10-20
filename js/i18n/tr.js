@@ -139,6 +139,11 @@ export default {
   'cal.noEntries': 'Henüz kayıt yok. İlaç aldığında ya da bir şey içtiğinde burada görünür.',
   'cal.summary': '<b>{n}</b> kayıt · <b>{d}</b> gün',
   'cal.monthEmpty': 'Bu ay henüz kayıt yok.',
+  'cal.runsOutTitle': 'Kutu bitiş tarihleri',
+  'cal.runsOutLegend': 'Kutu biter',
+  'cal.runsOutAria': '{names} bu gün biter',
+  'cal.runsOutToday': 'bugün',
+  'cal.runsOutIn': '{n} gün sonra',
   'chart.noEntries': 'kayıt yok',
   'chart.planned': 'Hatırlatma saati',
 
@@ -149,6 +154,8 @@ export default {
   'notify.noSupport': ' (bu tarayıcı bildirimi desteklemiyor)',
   'notify.denied': ' (bildirim izni kapalı)',
   'notify.title': '{name} zamanı',
+  'notify.again': 'Hâlâ alınmadı: {amount} · {time}',
+  'notify.amount': '{amount} · {time}',
   'notify.test': 'Bildirimler çalışıyor ✓',
 
   // confirmations
@@ -176,6 +183,8 @@ export default {
   'settings.color': 'Renk',
   'settings.language': 'Dil',
   'settings.notifications': 'Bildirimler',
+  'settings.nag': 'Alınmayan dozu saat başı hatırlat',
+  'settings.nagNote': 'Hatırlatma saatinden sonra dozu alana kadar her saat yeniden bildirim gelir. Gece 22:00\'den sonra tekrar etmez.',
   'settings.data': 'Veriler',
   'settings.dataNote': 'İlaçlarını ve kayıtlarını bir dosya olarak indir. Yedek olarak saklayabilirsin.',
   'settings.download': 'Verileri indir (JSON)',

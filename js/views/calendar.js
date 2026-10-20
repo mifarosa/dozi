@@ -5,8 +5,9 @@ import {
   kindLabels, buildEntries, groupByDay, dayKinds, monthEntries,
 } from '../history.js';
 import {
-  dayKey, addDays, startOfWeek, dayFmt, monthFmt, formatTime,
+  dayKey, addDays, startOfWeek, dayFmt, monthFmt, formatTime, dateFmt,
 } from '../dates.js';
+import { runOuts, runOutsByDay, daysUntil } from '../runout.js';
 import { t, dayNames } from '../i18n.js';
 import { esc } from '../html.js';
 import { weekRows, hasMarks } from '../timeline.js';
@@ -38,7 +39,7 @@ function dayHeading(e, list) {
 // A forgotten dose can be added to any day up to today, when there is a medicine to add it to.
 const canBackfill = (day, now) => Boolean(day) && day <= dayKey(now) && state.meds.length > 0;
 
-function gridHtml(byDay, now, week) {
+function gridHtml(byDay, now, week, ends) {
   const { calMonth, selectedDay } = state;
   const m = calMonth.getMonth();
   const todayKey = dayKey(now);
@@ -52,11 +53,12 @@ function gridHtml(byDay, now, week) {
       const items = byDay.get(k) || [];
       const cls = ['cal-day', d.getMonth() !== m ? 'out' : '', items.length ? 'has' : '',
         k === todayKey ? 'is-today' : '', k === selectedDay ? 'selected' : '',
-        inWeek(d, week.start) ? 'in-week' : ''].join(' ');
+        inWeek(d, week.start) ? 'in-week' : '', ends.has(k) ? 'ends' : ''].join(' ');
       const dots = dayKinds(items).map((kind) => `<i class="dot-${kind}"></i>`).join('');
-      const label = `${dayFmt.format(d)}${items.length ? `, ${t('cal.entries', { n: items.length })}` : ''}`;
+      const runsOut = ends.has(k) ? `, ${t('cal.runsOutAria', { names: ends.get(k).join(', ') })}` : '';
+      const label = `${dayFmt.format(d)}${items.length ? `, ${t('cal.entries', { n: items.length })}` : ''}${runsOut}`;
       grid += `<button type="button" class="${cls}" data-day="${k}" aria-label="${label}">
-        <span>${d.getDate()}</span><span class="dots">${dots}</span></button>`;
+        <span>${d.getDate()}</span><span class="dots">${dots}</span>${ends.has(k) ? '<i class="end-flag"></i>' : ''}</button>`;
     }
   }
   return grid;
@@ -91,7 +93,7 @@ function chartCardHtml(entries, now, week) {
 }
 
 // The open day, in its own card so it never looks like part of the week list.
-function dayCardHtml(day, items, now) {
+function dayCardHtml(day, items, now, ends) {
   const title = dayFmt.format(new Date(`${day}T12:00:00`));
   const rows = items.slice().sort((a, b) => a.t - b.t).map((e) => `<li class="kind-${e.kind}">
       <span class="entry-time">${formatTime(e.t)}</span>
@@ -103,8 +105,23 @@ function dayCardHtml(day, items, now) {
         <div><span class="day-badge">${t('cal.selectedDay')}</span><h2>${title}</h2></div>
         <button type="button" class="chip" data-cal="week">${t('cal.backToWeek')}</button>
       </div>
+      ${ends.has(day) ? `<p class="end-note"><i class="end-flag"></i>${esc(t('cal.runsOutAria', { names: ends.get(day).join(', ') }))}</p>` : ''}
       ${rows ? `<ul class="day-list">${rows}</ul>` : `<p class="empty-note">${t('cal.dayEmpty')}</p>`}
       ${canBackfill(day, now) ? `<button type="button" class="btn ghost small" data-backfill-day="${day}">${t('cal.addDose')}</button>` : ''}
+    </section>`;
+}
+
+// "Vitamin D · 12 Nov 2026 · in 23 days": when each box runs out, soonest first.
+function runOutCardHtml(now) {
+  const rows = runOuts(state.meds, now).map(({ med, date }) => {
+    const days = daysUntil(date, now);
+    const when = days === 0 ? t('cal.runsOutToday') : t('cal.runsOutIn', { n: days });
+    return `<li><strong>${esc(med.name)}</strong><span class="med-sub">${dateFmt.format(date)} · ${when}</span></li>`;
+  });
+  if (!rows.length) return '';
+  return `<section class="card runouts">
+      <h2 class="section-title"><i class="end-flag"></i>${t('cal.runsOutTitle')}</h2>
+      <ul class="runout-list">${rows.join('')}</ul>
     </section>`;
 }
 
@@ -123,7 +140,11 @@ export function calendarHtml() {
   const byDay = groupByDay(entries);
   const now = new Date();
   const week = resolveWeek(state.weekStart, now);
-  const atCurrentMonth = calMonth.getFullYear() === now.getFullYear() && calMonth.getMonth() === now.getMonth();
+  // The grid may go forward up to the month of the last run-out day, so it can be seen.
+  const ends = runOutsByDay(state.meds, now);
+  const lastDay = runOuts(state.meds, now).reduce((latest, r) => (r.date > latest ? r.date : latest), now);
+  const lastMonth = lastDay.getFullYear() * 12 + lastDay.getMonth();
+  const atLastMonth = calMonth.getFullYear() * 12 + calMonth.getMonth() >= lastMonth;
 
   const monthList = monthEntries(entries, calMonth.getFullYear(), calMonth.getMonth());
   const days = new Set(monthList.map((e) => e.key)).size;
@@ -133,16 +154,19 @@ export function calendarHtml() {
       <div class="cal-head">
         <button type="button" class="icon-btn" data-cal="prev" aria-label="${t('cal.prevMonth')}">&#8249;</button>
         <h3>${monthFmt.format(calMonth)}</h3>
-        <button type="button" class="icon-btn" data-cal="next" aria-label="${t('cal.nextMonth')}" ${atCurrentMonth ? 'disabled' : ''}>&#8250;</button>
+        <button type="button" class="icon-btn" data-cal="next" aria-label="${t('cal.nextMonth')}" ${atLastMonth ? 'disabled' : ''}>&#8250;</button>
       </div>
-      <div class="cal-grid">${gridHtml(byDay, now, week)}</div>
+      <div class="cal-grid">${gridHtml(byDay, now, week, ends)}</div>
       <div class="cal-legend">
         ${Object.entries(kindLabels()).map(([k, label]) => `<span><i class="dot-${k}"></i>${label}</span>`).join('')}
+        ${ends.size ? `<span><i class="end-flag"></i>${t('cal.runsOutLegend')}</span>` : ''}
       </div>
       <p class="cal-summary">${monthList.length ? t('cal.summary', { n: monthList.length, d: days }) : t('cal.monthEmpty')}</p>
     </section>
 
+    ${runOutCardHtml(now)}
+
     ${weekHeadHtml(week)}
     ${chartCardHtml(entries, now, week)}
-    ${selectedDay ? dayCardHtml(selectedDay, byDay.get(selectedDay) || [], now) : weekListHtml(entries, week)}`;
+    ${selectedDay ? dayCardHtml(selectedDay, byDay.get(selectedDay) || [], now, ends) : weekListHtml(entries, week)}`;
 }

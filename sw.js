@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump CACHE when shipping changes.
-const CACHE = 'dozi-v18';
+const CACHE = 'dozi-v19';
 const ASSETS = [
   './',
   'index.html',
@@ -19,6 +19,7 @@ const ASSETS = [
   'js/pushUi.js',
   'js/push-config.js',
   'js/prefs.js',
+  'js/runout.js',
   'js/lang.js',
   'js/langUi.js',
   'js/i18n.js',
@@ -100,6 +101,8 @@ self.addEventListener('push', (e) => {
       icon: 'icons/icon-192.png',
       badge: 'icons/icon-192.png',
       tag: data.tag || 'dozi',
+      // An hourly repeat reuses its reminder's tag; without this it would replace it silently.
+      renotify: true,
     }),
   );
 });

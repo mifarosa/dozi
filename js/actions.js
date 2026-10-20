@@ -38,7 +38,9 @@ function moveMonth(direction) {
   state.calMonth = month;
   state.selectedDay = null;
   const isCurrent = month.getFullYear() === now.getFullYear() && month.getMonth() === now.getMonth();
-  state.weekStart = isCurrent ? null : storedWeek(startOfWeek(new Date(month.getFullYear(), month.getMonth() + 1, 0)), now);
+  // A month ahead (a run-out day lives there) has no past week to list; stay on this week.
+  const isFuture = month > new Date(now.getFullYear(), now.getMonth(), 1);
+  state.weekStart = isCurrent || isFuture ? null : storedWeek(startOfWeek(new Date(month.getFullYear(), month.getMonth() + 1, 0)), now);
   refresh();
 }
 
