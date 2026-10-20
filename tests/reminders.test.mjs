@@ -47,3 +47,10 @@ test('dayComplete once dose x times per day is taken', () => {
   assert.equal(dayComplete(med([{ t: at(8).getTime(), q: 4 }]), at(10)), false);
   assert.equal(dayComplete(med([{ t: at(8).getTime(), q: 8 }]), at(10)), true);
 });
+
+test('a medicine on the shelf never reminds, on the banner or by notification', () => {
+  const shelved = med([], { shelved: true });
+  assert.deepEqual(dueMeds([shelved, med()], at(9)).map((m) => m.shelved), [undefined]);
+  assert.deepEqual(unnotifiedTimes(shelved, at(21)), []);
+  assert.deepEqual(unnotifiedTimes(med(), at(21)), ['08:00', '20:00']);
+});

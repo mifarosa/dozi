@@ -17,14 +17,18 @@ export const ACCENTS = [
 // "system" follows the phone's language. Language names are written in their own language.
 export const LANGUAGES = [{ id: 'system' }, { id: 'tr', label: 'Türkçe' }, { id: 'en', label: 'English' }];
 
-export const DEFAULT_PREFS = { theme: 'system', accent: 'teal', lang: 'system' };
+// nag: the server repeats a reminder every hour until the dose is taken.
+export const DEFAULT_PREFS = {
+  theme: 'system', accent: 'teal', lang: 'system', nag: true,
+};
 
 // Unknown or damaged values fall back to the defaults.
 export function normalizePrefs(raw) {
   const theme = THEMES.some((t) => t.id === raw?.theme) ? raw.theme : DEFAULT_PREFS.theme;
   const accent = ACCENTS.some((a) => a.id === raw?.accent) ? raw.accent : DEFAULT_PREFS.accent;
   const lang = LANGUAGES.some((l) => l.id === raw?.lang) ? raw.lang : DEFAULT_PREFS.lang;
-  return { theme, accent, lang };
+  const nag = typeof raw?.nag === 'boolean' ? raw.nag : DEFAULT_PREFS.nag;
+  return { theme, accent, lang, nag };
 }
 
 export function loadPrefs() {

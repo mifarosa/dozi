@@ -22,10 +22,10 @@ export function boxEndedAt(m) {
 }
 
 // Should the app ask about switching to a new box? Only when the box ran out on an earlier
-// day (not today) and the person has not said "later" today.
+// day (not today), the person has not said "later" today and the medicine is not on the shelf.
 // Returns { daysAgo } or null.
 export function newBoxPrompt(m, now = new Date()) {
-  if (remainingQ(m) > 0) return null;
+  if (m.shelved || remainingQ(m) > 0) return null;
   if (m.askedBox === dayKey(now)) return null;
   const ended = boxEndedAt(m);
   const daysAgo = ended == null

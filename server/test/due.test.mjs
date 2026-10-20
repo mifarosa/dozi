@@ -48,7 +48,7 @@ test('yesterday\'s dose does not count today, judged on the user\'s own midnight
 test('a time more than maxLateMin ago is skipped (no morning replay in the evening)', () => {
   assert.equal(due([med()], '2026-10-07T08:31:00').length, 0);
   assert.equal(due([med()], '2026-10-07T08:30:00').length, 1);
-  assert.equal(due([med()], '2026-10-07T20:00:00', { maxLateMin: 30 }).length, 0);
+  assert.equal(due([med()], '2026-10-07T20:00:00', { maxLateMin: 30, repeatHourly: false }).length, 0);
 });
 
 test('two daily times: each is judged on its own', () => {
@@ -64,13 +64,17 @@ test('finished medicines and medicines without times are ignored', () => {
 });
 
 test('the same instant is a different wall clock in another time zone', () => {
+  // Hourly repeats are off here: this is about which wall clock the first reminder follows.
+  const first = (timeZone, nowMs) => dueReminders({
+    uid: 'u', meds: [med()], timeZone, nowMs, repeatHourly: false,
+  }).length;
   const nowMs = ist('2026-10-07T08:05:00'); // 05:05 UTC
-  assert.equal(dueReminders({ uid: 'u', meds: [med()], timeZone: IST, nowMs }).length, 1);
-  assert.equal(dueReminders({ uid: 'u', meds: [med()], timeZone: 'UTC', nowMs }).length, 0);
-  assert.equal(dueReminders({ uid: 'u', meds: [med()], timeZone: 'Asia/Tokyo', nowMs }).length, 0);
+  assert.equal(first(IST, nowMs), 1);
+  assert.equal(first('UTC', nowMs), 0);
+  assert.equal(first('Asia/Tokyo', nowMs), 0);
   // 08:05 in Tokyo is 23:05 UTC the evening before
   const tokyo = new Date('2026-10-07T08:05:00+09:00').getTime();
-  assert.equal(dueReminders({ uid: 'u', meds: [med()], timeZone: 'Asia/Tokyo', nowMs: tokyo }).length, 1);
+  assert.equal(first('Asia/Tokyo', tokyo), 1);
 });
 
 test('an unknown time zone falls back to Istanbul instead of crashing', () => {
@@ -107,4 +111,50 @@ test('boxStart is judged on the user\'s wall clock, not in UTC', () => {
   assert.equal(due([m], '2026-10-05T08:05:00').length, 0, 'the 00:10 dose already covers today');
   const m2 = { ...m, log: [log[0]] };
   assert.equal(due([m2], '2026-10-05T08:05:00').length, 1);
+});
+
+test('a dose that is still not taken is reminded again every hour', () => {
+  const at = (iso) => due([med()], iso).map((r) => [r.time, r.repeat, r.key.split('|')[2]]);
+  assert.deepEqual(at('2026-10-07T08:05:00'), [['08:00', 0, '08:00']]);
+  assert.deepEqual(at('2026-10-07T08:45:00'), []); // between slots: nothing is due
+  assert.deepEqual(at('2026-10-07T09:00:30'), [['08:00', 1, '08:00+1']]);
+  assert.deepEqual(at('2026-10-07T13:10:00'), [['08:00', 5, '08:00+5']]);
+  assert.match(due([med()], '2026-10-07T09:00:30')[0].body, /Hâlâ alınmadı/);
+  assert.doesNotMatch(due([med()], '2026-10-07T08:05:00')[0].body, /Hâlâ/);
+});
+
+test('repeats stop once the dose is taken, even a late one', () => {
+  const taken = med({ log: [{ t: ist('2026-10-07T10:20:00'), q: 4 }] });
+  assert.equal(due([taken], '2026-10-07T11:00:30').length, 0);
+  assert.equal(due([med({ log: [{ t: ist('2026-10-07T10:20:00'), q: 2 }] })], '2026-10-07T11:00:30').length, 1);
+});
+
+test('no repeats at night, and each repeat is its own key', () => {
+  assert.equal(due([med()], '2026-10-07T22:00:30').length, 1);
+  assert.equal(due([med()], '2026-10-07T23:00:30').length, 0);
+  assert.equal(due([med({ times: ['23:00'] })], '2026-10-07T23:05:00').length, 1); // its own time is always sent
+  const keys = ['09:00:30', '10:00:30', '11:00:30'].map((t) => due([med()], `2026-10-07T${t}`)[0].key);
+  assert.equal(new Set(keys).size, 3);
+  assert.ok(keys.every((k) => k.endsWith('|2026-10-07')), 'the day stays last so old keys can be pruned');
+});
+
+test('repeats of one time stop when the next reminder time of that medicine comes', () => {
+  const two = med({ perDay: 2, times: ['08:00', '14:00'] });
+  assert.deepEqual(due([two], '2026-10-07T13:05:00').map((r) => r.key.split('|')[2]), ['08:00+5']);
+  // At 14:05 the 14:00 reminder is due; the morning one no longer repeats.
+  assert.deepEqual(due([two], '2026-10-07T14:05:00').map((r) => r.key.split('|')[2]), ['14:00']);
+  assert.deepEqual(due([two], '2026-10-07T15:05:00').map((r) => r.key.split('|')[2]), ['14:00+1']);
+});
+
+test('repeats can be turned off', () => {
+  assert.equal(due([med()], '2026-10-07T10:05:00', { repeatHourly: false }).length, 0);
+  assert.equal(due([med()], '2026-10-07T08:05:00', { repeatHourly: false }).length, 1);
+});
+
+test('a medicine on the shelf is never reminded, not even by hourly repeats', () => {
+  const shelved = med({ shelved: true });
+  assert.equal(due([shelved], '2026-10-07T08:05:00').length, 0);
+  assert.equal(due([shelved], '2026-10-07T11:00:30').length, 0);
+  assert.equal(due([med({ shelved: false })], '2026-10-07T08:05:00').length, 1);
+  assert.equal(due([shelved, med({ id: 'm2', name: 'B' })], '2026-10-07T08:05:00').length, 1);
 });

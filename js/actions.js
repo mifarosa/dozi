@@ -18,6 +18,7 @@ function take(m, q) {
   // Today's dose is already complete: ask before logging an extra one.
   if (dayComplete(m) && !confirm(t('confirm.extraDose'))) return;
   const input = document.getElementById('take-time');
+  m.shelved = false; // taking it means it is in use again
   m.log.push({ t: resolveTakeTime(input ? input.value : ''), q: amount });
   commit();
 }
@@ -38,7 +39,9 @@ function moveMonth(direction) {
   state.calMonth = month;
   state.selectedDay = null;
   const isCurrent = month.getFullYear() === now.getFullYear() && month.getMonth() === now.getMonth();
-  state.weekStart = isCurrent ? null : storedWeek(startOfWeek(new Date(month.getFullYear(), month.getMonth() + 1, 0)), now);
+  // A month ahead (a run-out day lives there) has no past week to list; stay on this week.
+  const isFuture = month > new Date(now.getFullYear(), now.getMonth(), 1);
+  state.weekStart = isCurrent || isFuture ? null : storedWeek(startOfWeek(new Date(month.getFullYear(), month.getMonth() + 1, 0)), now);
   refresh();
 }
 
@@ -80,6 +83,14 @@ function deleteMed(m) {
   commit();
 }
 
+// Put a medicine on the shelf (not in use: no reminders, no new-box question) or take it down.
+function setShelved(id, shelved) {
+  const m = findMed(id);
+  if (!m) return;
+  m.shelved = shelved;
+  commit();
+}
+
 // "Daha sonra": do not ask about this medicine's new box again today.
 function askLater(id) {
   const m = findMed(id);
@@ -100,6 +111,8 @@ const HANDLERS = [
   ['backfillDay', (btn) => openBackfill({ date: btn.dataset.backfillDay })],
   ['newbox', (btn) => openNewBox(btn.dataset.newbox)],
   ['newboxLater', (btn) => askLater(btn.dataset.newboxLater)],
+  ['shelve', (btn) => setShelved(btn.dataset.shelve, true)],
+  ['unshelve', (btn) => setShelved(btn.dataset.unshelve, false)],
   ['open', (btn) => { state.openId = btn.dataset.open; refresh(); }],
   ['take', (btn, m) => m && take(m, Number(btn.dataset.take))],
   ['undo', (btn, m) => { if (m) { m.log.pop(); commit(); } }],

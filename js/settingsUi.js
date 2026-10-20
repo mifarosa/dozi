@@ -54,4 +54,12 @@ export function initSettings() {
       downloadData();
     }
   });
+
+  // The hourly-repeat switch is a checkbox, so it reports through 'change'.
+  document.getElementById('app').addEventListener('change', (e) => {
+    if (!e.target.matches('[data-nag]')) return;
+    prefs = { ...prefs, nag: e.target.checked };
+    savePrefs(prefs);
+    syncPushRecord(); // the server reads the switch from this device's record
+  });
 }

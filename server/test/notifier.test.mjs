@@ -102,6 +102,7 @@ test('stops retrying once the reminder is too old', async () => {
 
 test('a test request sends one test push, and old requests are ignored', async () => {
   const { notifier, net } = setup({ nowIso: '2026-10-07T12:00:00' });
+  notifier.setUser('u1', { meds: [] }); // no reminders (an hourly repeat is due at 12:00)
   notifier.setSub('s1', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1, testAt: ist('2026-10-07T11:59:30') });
   await notifier.tick();
   await notifier.tick();
@@ -153,10 +154,11 @@ function twoPeople() {
   });
   // Ayşe is in Istanbul with two phones; Kenji is in Tokyo with one. Both have a medicine "m1" at 08:00.
   notifier.setUser('ayse', { meds: [med('Vitamin D')] });
-  notifier.setSub('ayse-iphone', { uid: 'ayse', tz: 'Europe/Istanbul', updatedAt: 1 });
-  notifier.setSub('ayse-tablet', { uid: 'ayse', tz: 'Europe/Istanbul', updatedAt: 2 });
+  // These people's tests are about who gets the first reminder, so their devices skip hourly repeats.
+  notifier.setSub('ayse-iphone', { uid: 'ayse', tz: 'Europe/Istanbul', updatedAt: 1, nag: false });
+  notifier.setSub('ayse-tablet', { uid: 'ayse', tz: 'Europe/Istanbul', updatedAt: 2, nag: false });
   notifier.setUser('kenji', { meds: [med('Metformin')] });
-  notifier.setSub('kenji-phone', { uid: 'kenji', tz: 'Asia/Tokyo', updatedAt: 1 });
+  notifier.setSub('kenji-phone', { uid: 'kenji', tz: 'Asia/Tokyo', updatedAt: 1, nag: false });
   // A person with a phone but no data yet, and one with data but no phone.
   notifier.setSub('ghost-phone', { uid: 'ghost', tz: 'Europe/Istanbul', updatedAt: 1 });
   notifier.setUser('nophone', { meds: [med('Nobody sees this')] });
@@ -204,7 +206,7 @@ test('people without a phone or without data are skipped quietly', async () => {
 test('a test request goes to the device that asked, and only that one', async () => {
   const { notifier, net, setNow } = twoPeople();
   setNow('2026-10-07T12:00:00+03:00');
-  notifier.setSub('ayse-tablet', { uid: 'ayse', tz: 'Europe/Istanbul', updatedAt: 2, testAt: new Date('2026-10-07T11:59:50+03:00').getTime() });
+  notifier.setSub('ayse-tablet', { uid: 'ayse', tz: 'Europe/Istanbul', updatedAt: 2, nag: false, testAt: new Date('2026-10-07T11:59:50+03:00').getTime() });
   await notifier.tick();
   assert.deepEqual(net.map((p) => [p.to, p.tag]), [['ayse-tablet', 'dozi-test']]);
 });
@@ -232,4 +234,43 @@ test('each device gets the reminder and the test message in its own language', a
   await notifier.tick();
   assert.equal(net.pushed.length, 1);
   assert.equal(net.pushed[0].body, 'Notifications are working ✓');
+});
+
+test('hourly repeats are sent, once each, and only to devices that keep them on', async () => {
+  const { notifier, net, setNow } = setup();
+  notifier.setSub('s1', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1 });
+  notifier.setSub('s2', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1, lang: 'en', nag: false });
+  await notifier.tick();
+  assert.deepEqual(net.pushed.map((p) => p.to).sort(), ['s1', 's2']); // the reminder itself: every device
+
+  net.pushed.length = 0;
+  setNow('2026-10-07T09:00:30');
+  assert.equal((await notifier.tick()).sent, 1);
+  assert.equal((await notifier.tick()).sent, 0); // not again within the same hour
+  assert.deepEqual(net.pushed.map((p) => [p.to, p.body]), [['s1', 'Hâlâ alınmadı: 1 hap · 08:00']]);
+
+  net.pushed.length = 0;
+  setNow('2026-10-07T10:00:30');
+  assert.equal((await notifier.tick()).sent, 1);
+  assert.equal(net.pushed.length, 1);
+});
+
+test('a user whose devices all turned repeats off gets none, and the next hour still works', async () => {
+  const { notifier, net, setNow } = setup();
+  notifier.setSub('s1', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1, nag: false });
+  await notifier.tick();
+  net.pushed.length = 0;
+  setNow('2026-10-07T09:00:30');
+  assert.equal((await notifier.tick()).sent, 0);
+  assert.equal(net.pushed.length, 0);
+});
+
+test('English devices get the repeat in English', async () => {
+  const { notifier, net, setNow } = setup();
+  notifier.setSub('s1', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1, lang: 'en' });
+  await notifier.tick();
+  net.pushed.length = 0;
+  setNow('2026-10-07T09:00:30');
+  await notifier.tick();
+  assert.equal(net.pushed[0].body, 'Not taken yet: 1 pill · 08:00');
 });

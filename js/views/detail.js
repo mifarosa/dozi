@@ -5,6 +5,7 @@ import {
 import { t, pillsText, pillUnit } from '../i18n.js';
 import { startOfDay, formatTime, dateFmt } from '../dates.js';
 import { reminderNote } from '../notifications.js';
+import { runOutDate } from '../runout.js';
 import { blisterHtml } from './pills.js';
 import { timeChartHtml } from './timeChart.js';
 import { esc } from '../html.js';
@@ -40,18 +41,22 @@ export function detailHtml(m) {
   const doneToday = todayQ >= perDayQ;
   const finished = remainingQ(m) === 0;
   const off = finished ? 'disabled' : '';
-  const end = new Date();
-  end.setDate(end.getDate() + daysLeft(m));
+  const end = runOutDate(m);
 
   return `
     <section class="card summary">
       <h2>${esc(m.name)}</h2>
       <div class="big">${formatPills(remainingQ(m))}<small> / ${pillsText(totalQ(m))}</small></div>
-      <div class="med-sub">${t('detail.daily', { amount: pillsText(perDayQ) })} · ${t('list.daysLeft', { n: daysLeft(m) })}${finished ? '' : ` (${dateFmt.format(end)})`}${m.boxes.length ? ` · ${t('detail.boxNo', { n: m.boxes.length + 1 })}` : ''}</div>
+      <div class="med-sub">${t('detail.daily', { amount: pillsText(perDayQ) })} · ${t('list.daysLeft', { n: daysLeft(m) })}${end ? ` (${dateFmt.format(end)})` : ''}${m.boxes.length ? ` · ${t('detail.boxNo', { n: m.boxes.length + 1 })}` : ''}</div>
       <div class="today ${doneToday ? 'done' : ''}">${t('detail.today', { a: formatPills(todayQ), b: formatPills(perDayQ), unit: pillUnit(perDayQ) })}</div>
       ${m.times.length ? `<div class="med-sub">${t('detail.reminder', { times: m.times.join(', '), note: reminderNote() })}</div>` : ''}
     </section>
-${finished ? `
+${m.shelved ? `
+    <section class="card newbox shelf-note">
+      <p><b>${t('detail.shelvedBold')}</b>${t('detail.shelvedRest')}</p>
+      <button class="btn primary small" data-unshelve="${esc(m.id)}">${t('detail.unshelve')}</button>
+    </section>` : ''}
+${finished && !m.shelved ? `
     <section class="card newbox">
       <p><b>${t('detail.boxFinishedBold')}</b>${t('detail.boxFinishedRest')}</p>
       <button class="btn primary small" data-newbox="${esc(m.id)}">${t('detail.switchBox')}</button>
@@ -81,6 +86,7 @@ ${finished ? `
 
     <div class="actions">
       <button class="btn ghost" data-edit>${t('detail.edit')}</button>
+      ${m.shelved ? '' : `<button class="btn ghost" data-shelve="${esc(m.id)}">${t('detail.shelve')}</button>`}
       <button class="btn ghost" data-newbox="${esc(m.id)}">${t('detail.newBox')}</button>
       <button class="btn danger" data-delete>${t('detail.delete')}</button>
     </div>`;

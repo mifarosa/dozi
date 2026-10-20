@@ -16,10 +16,12 @@ function fakeRoot() {
 }
 
 test('normalizePrefs keeps valid choices and repairs everything else', () => {
-  assert.deepEqual(normalizePrefs({ theme: 'dark', accent: 'rose', lang: 'en' }), { theme: 'dark', accent: 'rose', lang: 'en' });
+  assert.deepEqual(normalizePrefs({ theme: 'dark', accent: 'rose', lang: 'en', nag: false }), {
+    theme: 'dark', accent: 'rose', lang: 'en', nag: false,
+  });
   assert.deepEqual(normalizePrefs({ theme: 'neon', accent: 7, lang: 'xx' }), DEFAULT_PREFS);
   assert.deepEqual(normalizePrefs(null), DEFAULT_PREFS);
-  assert.deepEqual(normalizePrefs({ theme: 'light' }), { theme: 'light', accent: 'teal', lang: 'system' });
+  assert.deepEqual(normalizePrefs({ theme: 'light' }), { theme: 'light', accent: 'teal', lang: 'system', nag: true });
 });
 
 test('applyPrefs sets attributes, and removes them for the defaults', () => {

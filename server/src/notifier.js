@@ -101,9 +101,14 @@ export function createNotifier({
         });
         for (const r of due) {
           if (sent[r.key]) continue;
-          const accepted = await sendAll(list, (s) => ({
+          // Hourly repeats only go to devices that have not switched them off.
+          const targets = r.repeat ? list.filter((s) => s.nag !== false) : list;
+          if (!targets.length) continue;
+          const accepted = await sendAll(targets, (s) => ({
             title: translate(s.lang, 'notify.title', { name: r.name }),
-            body: `${pillsText(r.dose, s.lang)} · ${r.time}`,
+            body: translate(s.lang, r.repeat ? 'notify.again' : 'notify.amount', {
+              amount: pillsText(r.dose, s.lang), time: r.time,
+            }),
             tag: `dozi-${r.medId}-${r.time}`,
           }));
           // Not marked when nobody accepted it, so the next tick tries again (until it is too late).

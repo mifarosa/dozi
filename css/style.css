@@ -577,3 +577,27 @@ label.check input { width: 22px; height: 22px; margin: 0; flex: none; accent-col
 .day-list li.kind-tea { border-left-color: var(--kind-tea); }
 .day-item { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .day-item .med-sub { margin: 0; }
+
+/* ---------- Box run-out day ---------- */
+
+/* A corner flag, a shape of its own so it is not told apart by colour alone. */
+.end-flag {
+  display: inline-block;
+  width: 10px; height: 10px;
+  background: var(--danger);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  flex: none;
+}
+.cal-day { position: relative; }
+.cal-day .end-flag { position: absolute; top: 3px; right: 3px; }
+.cal-day.selected .end-flag { background: var(--on-brand); }
+.cal-legend .end-flag { width: 9px; height: 9px; }
+.section-title .end-flag { margin-right: 8px; vertical-align: -1px; }
+.end-note { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; font-size: 0.9rem; font-weight: 600; }
+.runout-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.runout-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); }
+.runout-list li:first-child { border-top: 0; }
+.runout-list .med-sub { margin: 0; text-align: right; }
+.setting-check { margin-top: 14px; }
+.runout-list strong { white-space: nowrap; }
+.card.med.shelved { opacity: 0.65; border-style: dashed; }

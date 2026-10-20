@@ -14,6 +14,8 @@
 - Takvim: ay görünümü; altında yalnızca bir hafta (Pazartesi'den itibaren) listelenir, oklarla önceki haftalara gidilir. Bir güne dokununca o gün ayrı bir "Seçili gün" kartında saatleriyle görünür; kayıt silinebilir, o güne doz eklenebilir
 - Ek kayıtlar: sağ üstteki + tuşu "Düzenli ilaç" ya da "Günlük kayıt" seçtirir; vitamin, takviye, bitki çayı gibi şeyler hazır ve son kullanılan önerilerle, istenirse geçmiş bir güne kaydedilir
 - Dil: Türkçe ve İngilizce. "Sistem" telefonun diline uyar (Türkçe telefon Türkçe, diğerleri İngilizce). Sunucu bildirimleri de cihazın diliyle gelir
+- Rafa kaldırma: kullanmak istemediğin bir ilaç (ör. yeni paketini almışsın ama şimdi başlamayacaksın) "Rafa kaldır" ile rafa konur. Rafta olan ilaç için hatırlatma, saat başı tekrar, yeni kutu sorusu ve bitiş tarihi olmaz; listede soluk görünür. "Rafdan al" ya da bir doz kaydetmek onu geri getirir. "Daha sonra" ise soruyu yalnızca bugün için erteler
+- Kutunun biteceği gün: takvimde o günün köşesinde bir bayrak görünür, altında her ilacın bitiş tarihi ve kaç gün kaldığı listelenir. Bugünkü doz alındıysa tahmin yarından başlar. Takvim, son bitiş gününün olduğu aya kadar ileri gidebilir
 - Ayarlar sekmesi: tema (sistem / açık / koyu), vurgu rengi, dil, sunucu bildirimlerini açma-kapatma ve test bildirimi, verileri JSON olarak indirme. Tercihler cihazda saklanır
 - İsteğe bağlı Firebase yedeği: Google ile giriş yapınca veriler Firestore'a yedeklenir, cihazlar arası senkronize olur
 - Veriler cihazda (localStorage) saklanır; çevrimdışı çalışır, ana ekrana eklenebilir
@@ -32,6 +34,8 @@ npx http-server -p 8080 .
 - **Sunucu (isteğe bağlı):** Dozi kapalıyken de, tam saatinde bildirim gelir. Evdeki sürekli açık bir cihazda çalışan küçük bir servis gerekir: [`server/README.md`](server/README.md). Sunucu bildirimi açıkken cihaz içi hatırlatmalar susar, çift bildirim gelmez.
 
 İki katmanda da bugünkü doz alındıysa hatırlatma gelmez.
+
+**Saat başı tekrar (yalnızca sunucu bildirimi):** Hatırlatma saatinde doz alınmadıysa, alınana kadar her saat başı "Hâlâ alınmadı" bildirimi gelir. Bir sonraki hatırlatma saatinde ya da 22:00'de durur; hatırlatmanın kendisi her zaman gider. Ayarlar'daki anahtarla cihaz başına kapatılır. Cihaz içi hatırlatmalar tekrar etmez.
 
 ## Firebase yedeği kurulumu
 Firebase ayarı boşken uygulama yalnızca cihazda çalışır; giriş çubuğu görünmez.

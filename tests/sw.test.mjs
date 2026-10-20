@@ -40,6 +40,7 @@ test('a pushed reminder becomes a notification', async () => {
   assert.equal(shown[0].options.body, '1 hap · 08:00');
   assert.equal(shown[0].options.tag, 'dozi-m1-08:00');
   assert.equal(shown[0].options.icon, 'icons/icon-192.png');
+  assert.equal(shown[0].options.renotify, true, 'an hourly repeat shares its tag and must still alert');
 });
 
 test('a push is always shown, even without a payload or with a broken one', async () => {

@@ -105,3 +105,11 @@ test('a forgotten dose from before the current box is not limited by it', () => 
   assert.equal(backfillEntry(m, { date: '2026-10-03', time: '08:00', q: 4, now }).q, 4);
   assert.equal(remainingQ(finished) > 0, true);
 });
+
+test('a medicine on the shelf is not asked about a new box, and is asked again once it is taken down', () => {
+  const m = emptied();
+  assert.ok(newBoxPrompt(m, new Date(2026, 9, 6, 12)));
+  assert.equal(newBoxPrompt({ ...m, shelved: true }, new Date(2026, 9, 6, 12)), null);
+  assert.ok(newBoxPrompt({ ...m, shelved: false }, new Date(2026, 9, 6, 12)));
+  assert.equal(normalizeMed({ id: 'a' }).shelved, false);
+});

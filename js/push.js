@@ -4,6 +4,7 @@ import * as cloud from './cloud.js';
 import { vapidPublicKey } from './push-config.js';
 import { t } from './i18n.js';
 import { getLang } from './lang.js';
+import { loadPrefs } from './prefs.js';
 
 export const pushConfigured = Boolean(vapidPublicKey);
 
@@ -87,6 +88,7 @@ export async function saveSubscription(user, sub) {
     keys: json.keys,
     tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
     lang: getLang(), // the server writes the reminder in this language
+    nag: loadPrefs().nag, // false: no hourly repeats for this device
     ua: navigator.userAgent.slice(0, 200),
     updatedAt: Date.now(),
   });
