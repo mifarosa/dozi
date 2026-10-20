@@ -18,12 +18,14 @@ export function pendingTimes(m, now = new Date()) {
 }
 
 // Medicines with a passed reminder time and no matching dose yet, that still have pills left.
+// A medicine put on the shelf is not in use, so it never reminds.
 export const dueMeds = (meds, now = new Date()) => (
-  meds.filter((m) => pendingTimes(m, now).length && remainingQ(m) > 0)
+  meds.filter((m) => !m.shelved && pendingTimes(m, now).length && remainingQ(m) > 0)
 );
 
 // Pending times that have not been announced with a notification today.
 export function unnotifiedTimes(m, now = new Date()) {
+  if (m.shelved) return [];
   const key = dayKey(now);
   const fired = m.fired || {};
   return pendingTimes(m, now).filter((t) => fired[t] !== key);

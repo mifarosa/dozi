@@ -64,7 +64,7 @@ export function dueReminders({
   const out = [];
 
   for (const raw of meds || []) {
-    if (!raw || !Array.isArray(raw.times) || !raw.times.length) continue;
+    if (!raw || raw.shelved || !Array.isArray(raw.times) || !raw.times.length) continue;
     const m = inWall(raw, zone);
     if (remainingQ(m) <= 0) continue;
     // Only the minute that "now" falls in or earlier ones; pendingTimes also drops

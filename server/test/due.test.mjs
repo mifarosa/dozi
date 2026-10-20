@@ -150,3 +150,11 @@ test('repeats can be turned off', () => {
   assert.equal(due([med()], '2026-10-07T10:05:00', { repeatHourly: false }).length, 0);
   assert.equal(due([med()], '2026-10-07T08:05:00', { repeatHourly: false }).length, 1);
 });
+
+test('a medicine on the shelf is never reminded, not even by hourly repeats', () => {
+  const shelved = med({ shelved: true });
+  assert.equal(due([shelved], '2026-10-07T08:05:00').length, 0);
+  assert.equal(due([shelved], '2026-10-07T11:00:30').length, 0);
+  assert.equal(due([med({ shelved: false })], '2026-10-07T08:05:00').length, 1);
+  assert.equal(due([shelved, med({ id: 'm2', name: 'B' })], '2026-10-07T08:05:00').length, 1);
+});

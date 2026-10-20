@@ -56,3 +56,9 @@ test('daysUntil counts calendar days, not 24 hour blocks', () => {
   assert.equal(daysUntil(new Date(2026, 9, 21, 0, 1), now), 1);
   assert.equal(daysUntil(new Date(2026, 10, 16), now), 27);
 });
+
+test('a medicine on the shelf has no run-out day', () => {
+  assert.equal(runOutDate(med({ shelved: true }), now), null);
+  assert.deepEqual(runOuts([med({ shelved: true })], now), []);
+  assert.equal(runOutsByDay([med({ shelved: true })], now).size, 0);
+});

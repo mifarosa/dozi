@@ -64,7 +64,7 @@ export function saveMeta(meta) {
 
 // Older saved data has no reminder fields, so fill in defaults.
 export const normalizeMed = (m) => ({
-  times: [], fired: {}, log: [], boxStart: 0, boxes: [], ...m,
+  times: [], fired: {}, log: [], boxStart: 0, boxes: [], shelved: false, ...m,
 });
 
 export function newId() {

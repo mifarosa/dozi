@@ -4,11 +4,11 @@ import { startOfDay, addDays, dayKey } from './dates.js';
 
 // The day the last pill is taken, assuming the usual dose every day from now on. Today counts
 // only for the dose still to take: once today's doses are in, the pills left start tomorrow.
-// Null when the box is already empty.
+// Null when the box is already empty or the medicine is on the shelf (not in use).
 export function runOutDate(m, now = new Date()) {
   const left = remainingQ(m);
   const perDayQ = m.dose * m.perDay;
-  if (left <= 0 || perDayQ <= 0) return null;
+  if (m.shelved || left <= 0 || perDayQ <= 0) return null;
   const today = startOfDay(now);
   const needToday = Math.max(0, perDayQ - takenTodayQ(m, now));
   if (left <= needToday) return today;

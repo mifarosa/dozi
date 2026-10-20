@@ -51,7 +51,12 @@ export function detailHtml(m) {
       <div class="today ${doneToday ? 'done' : ''}">${t('detail.today', { a: formatPills(todayQ), b: formatPills(perDayQ), unit: pillUnit(perDayQ) })}</div>
       ${m.times.length ? `<div class="med-sub">${t('detail.reminder', { times: m.times.join(', '), note: reminderNote() })}</div>` : ''}
     </section>
-${finished ? `
+${m.shelved ? `
+    <section class="card newbox shelf-note">
+      <p><b>${t('detail.shelvedBold')}</b>${t('detail.shelvedRest')}</p>
+      <button class="btn primary small" data-unshelve="${esc(m.id)}">${t('detail.unshelve')}</button>
+    </section>` : ''}
+${finished && !m.shelved ? `
     <section class="card newbox">
       <p><b>${t('detail.boxFinishedBold')}</b>${t('detail.boxFinishedRest')}</p>
       <button class="btn primary small" data-newbox="${esc(m.id)}">${t('detail.switchBox')}</button>
@@ -81,6 +86,7 @@ ${finished ? `
 
     <div class="actions">
       <button class="btn ghost" data-edit>${t('detail.edit')}</button>
+      ${m.shelved ? '' : `<button class="btn ghost" data-shelve="${esc(m.id)}">${t('detail.shelve')}</button>`}
       <button class="btn ghost" data-newbox="${esc(m.id)}">${t('detail.newBox')}</button>
       <button class="btn danger" data-delete>${t('detail.delete')}</button>
     </div>`;

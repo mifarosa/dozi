@@ -28,6 +28,7 @@ function newBoxCardsHtml() {
       <div class="row">
         <button class="btn primary small" data-newbox="${esc(m.id)}">${t('list.yesNewBox')}</button>
         <button class="btn ghost small" data-newbox-later="${esc(m.id)}">${t('list.later')}</button>
+        <button class="btn ghost small" data-shelve="${esc(m.id)}">${t('list.shelve')}</button>
       </div>
     </div>`;
   }).join('');
@@ -35,10 +36,10 @@ function newBoxCardsHtml() {
 
 function medCardHtml(m) {
   const pct = Math.round((remainingQ(m) / totalQ(m)) * 100);
-  return `<button class="card med" data-open="${esc(m.id)}">
+  return `<button class="card med${m.shelved ? ' shelved' : ''}" data-open="${esc(m.id)}">
       <div class="med-row"><strong>${esc(m.name)}</strong><span>${pillsText(remainingQ(m))}</span></div>
       <div class="bar"><div style="width:${pct}%"></div></div>
-      <div class="med-sub">${remainingQ(m) === 0 ? t('list.boxFinished') : t('list.daysLeft', { n: daysLeft(m) })}</div>
+      <div class="med-sub">${m.shelved ? t('list.shelved') : (remainingQ(m) === 0 ? t('list.boxFinished') : t('list.daysLeft', { n: daysLeft(m) }))}</div>
     </button>`;
 }
 
