@@ -2,7 +2,9 @@
 import { THEMES, ACCENTS, LANGUAGES } from '../prefs.js';
 import { pushSectionHtml } from '../pushUi.js';
 import { pushConfigured } from '../push.js';
-import { t } from '../i18n.js';
+import { t, pillsText } from '../i18n.js';
+import { state } from '../state.js';
+import { remainingQ } from '../store.js';
 import { esc } from '../html.js';
 
 function segmented(label, attr, options, chosen) {
@@ -27,6 +29,19 @@ function nagHtml(prefs) {
     <p class="setting-note">${t('settings.nagNote')}</p>`;
 }
 
+// Medicines put on the shelf: open one, or take it down again.
+function shelfHtml() {
+  const shelved = state.meds.filter((m) => m.shelved);
+  if (!shelved.length) return `<p class="setting-note">${t('settings.shelfEmpty')}</p>`;
+  const rows = shelved.map((m) => `<li>
+      <button type="button" class="shelf-open" data-open="${esc(m.id)}">
+        <strong>${esc(m.name)}</strong><span class="med-sub">${pillsText(remainingQ(m))}</span>
+      </button>
+      <button type="button" class="btn ghost small" data-unshelve="${esc(m.id)}">${t('detail.unshelve')}</button>
+    </li>`);
+  return `<ul class="shelf-list">${rows.join('')}</ul>`;
+}
+
 export function settingsHtml(prefs) {
   const themes = THEMES.map((o) => ({ id: o.id, label: t(`theme.${o.id}`) }));
   const languages = LANGUAGES.map((o) => ({ id: o.id, label: o.label || t('lang.system') }));
@@ -45,6 +60,11 @@ export function settingsHtml(prefs) {
       <h2>${t('settings.notifications')}</h2>
       ${pushSectionHtml()}
       ${pushConfigured ? nagHtml(prefs) : ''}
+    </section>
+
+    <section class="card settings">
+      <h2>${t('settings.shelf')}</h2>
+      ${shelfHtml()}
     </section>
 
     <section class="card settings">
