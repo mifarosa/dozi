@@ -5,6 +5,7 @@ import {
   enablePush, disablePush, sendTest, friendlyPushError,
 } from './push.js';
 import { esc } from './html.js';
+import { savePushHint } from './store.js';
 import { t } from './i18n.js';
 
 const NOTE_MS = 12000;
@@ -60,7 +61,12 @@ async function update() {
     configured: pushConfigured, signedIn: Boolean(state.user), ...env, subscribed,
   });
   // While push is on, the server sends the reminders; the on-device timer would double them.
-  state.pushActive = status === 'on';
+  // Before the cloud has answered, nobody looks signed in; that is not an answer, so keep what
+  // we knew from last time instead of re-enabling the on-device reminders.
+  if (state.authReady) {
+    state.pushActive = status === 'on';
+    savePushHint(state.pushActive);
+  }
   refresh();
   if (sub && subscribed) saveSubscription(state.user, sub).catch(() => {});
 }

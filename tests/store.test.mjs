@@ -55,3 +55,27 @@ test('normalizeMed fills fields older saves lack', () => {
   assert.deepEqual([m.times, m.fired, m.log], [[], {}, []]);
   assert.deepEqual(normalizeMed({ id: 'a', times: ['08:00'] }).times, ['08:00']);
 });
+
+test('the push hint is remembered, and anything unreadable means "off"', async () => {
+  const { loadPushHint, savePushHint } = await import('../js/store.js');
+  const data = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => (data.has(k) ? data.get(k) : null),
+    setItem: (k, v) => data.set(k, String(v)),
+    removeItem: (k) => data.delete(k),
+  };
+  try {
+    assert.equal(loadPushHint(), false);
+    savePushHint(true);
+    assert.equal(loadPushHint(), true);
+    savePushHint(false);
+    assert.equal(loadPushHint(), false);
+    data.set('dozi.pushOn', 'yes');
+    assert.equal(loadPushHint(), false);
+    globalThis.localStorage = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
+    assert.equal(loadPushHint(), false);
+    assert.doesNotThrow(() => savePushHint(true));
+  } finally {
+    delete globalThis.localStorage;
+  }
+});
