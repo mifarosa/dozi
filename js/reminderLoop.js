@@ -26,6 +26,7 @@ function sendNotifications(now) {
 
 export function checkReminders() {
   // While server push is on the phone gets each reminder from the server; skip the local copy.
+  // pushActive starts from last time's answer (see state.js), so this is also quiet at launch.
   if (canNotify() && !state.pushActive) sendNotifications(new Date());
 
   // The banner depends on the clock. Redraw only when it changes, so a time typed

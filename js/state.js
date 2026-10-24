@@ -2,7 +2,7 @@
 // Screens read `state`; changes go through commit() (persist + notify) or
 // refresh() (just redraw), so modules never need to import each other's render code.
 import {
-  load, save, loadExtras, saveExtras, loadMeta, saveMeta, normalizeMed,
+  load, save, loadExtras, saveExtras, loadMeta, saveMeta, normalizeMed, loadPushHint,
 } from './store.js';
 import { storedWeek } from './week.js';
 
@@ -16,7 +16,11 @@ export const state = {
   selectedDay: null, // 'YYYY-MM-DD' of the day opened below the calendar, or null
   weekStart: null, // Monday of the week listed below the calendar; null = this week
   user: null, // { uid, email } while signed in to the cloud
-  pushActive: false, // this device gets reminders from the server, so local ones are skipped
+  authReady: false, // true once the cloud has said whether anybody is signed in
+  // This device gets reminders from the server, so local ones are skipped. Starts from what was
+  // true last time: sign-in takes seconds, and without this the app would show the server's
+  // reminders a second time on every launch.
+  pushActive: loadPushHint(),
 };
 
 const listeners = { commit: [], refresh: [], user: [] };
@@ -55,6 +59,7 @@ export function commit() {
 
 export function setUser(user) {
   state.user = user;
+  state.authReady = true;
   listeners.user.forEach((fn) => fn());
 }
 

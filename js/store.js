@@ -62,6 +62,27 @@ export function saveMeta(meta) {
   }
 }
 
+const PUSH_KEY = 'dozi.pushOn';
+
+// Whether server notifications were on the last time we knew for sure. At start-up the answer
+// only arrives after sign-in; until then this decides whether on-device reminders stay quiet.
+export function loadPushHint() {
+  try {
+    return localStorage.getItem(PUSH_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function savePushHint(on) {
+  try {
+    if (on) localStorage.setItem(PUSH_KEY, '1');
+    else localStorage.removeItem(PUSH_KEY);
+  } catch {
+    // Same as save(): not fatal.
+  }
+}
+
 // Older saved data has no reminder fields, so fill in defaults.
 export const normalizeMed = (m) => ({
   times: [], fired: {}, log: [], boxStart: 0, boxes: [], shelved: false, ...m,
