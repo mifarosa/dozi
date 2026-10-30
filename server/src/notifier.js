@@ -10,6 +10,26 @@ const KEEP_DAYS = 2;
 
 const isGone = (err) => err && (err.statusCode === 404 || err.statusCode === 410);
 
+const BODY_MAX = 160;
+// The push service said no to a request that is not about a dead subscription. 400, 401 and 403 are
+// what a device that subscribed with another VAPID key gets, so say so.
+const KEY_HINT = ' (the device may have subscribed with a different VAPID key: turn notifications off and on again in Settings)';
+
+// One line that says why a push failed. Only the push service's host name is written, never the
+// full endpoint (it is the secret address of the device) and never keys or the message.
+export function describeFailure(err) {
+  if (!err || typeof err.statusCode !== 'number') return String((err && err.message) || err);
+  let host = '';
+  try {
+    host = new URL(err.endpoint).host;
+  } catch {
+    // No usable endpoint on the error; the status code still says plenty.
+  }
+  const body = String(err.body || '').replace(/\s+/g, ' ').trim().slice(0, BODY_MAX);
+  const hint = [400, 401, 403].includes(err.statusCode) ? KEY_HINT : '';
+  return `HTTP ${err.statusCode}${host ? ` (${host})` : ''}${body ? `: ${body}` : ''}${hint}`;
+}
+
 // deps:
 //   send(sub, payloadObject)  resolves when the push service accepted it; rejects with .statusCode
 //   removeSub(id)             forget a subscription the push service says is gone
@@ -60,7 +80,7 @@ export function createNotifier({
           subs.delete(sub.id);
           await removeSub(sub.id).catch(() => {});
         } else {
-          log(`push to ${sub.id} failed: ${err && (err.statusCode || err.message)}`);
+          log(`push to ${sub.id} failed: ${describeFailure(err)}`);
         }
       }
     }

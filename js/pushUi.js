@@ -25,23 +25,55 @@ function setNote(text) {
   refresh();
 }
 
-// The settings section. Empty states say why there is nothing to switch.
-export function pushSectionHtml() {
-  const off = busy ? 'disabled' : '';
-  const message = (text) => `<p class="setting-note">${esc(note || text)}</p>`;
-  return {
-    hidden: message(t(pushConfigured ? 'push.signInFirst' : 'push.notConfigured')),
-    'needs-install': message(t('push.needsInstall')),
-    unsupported: message(t('push.unsupported')),
-    denied: message(t('push.denied')),
-    ready: `${message(t('push.ready'))}
-      <button type="button" class="btn primary small" data-push="on" ${off}>${t('push.enable')}</button>`,
-    on: `${message(t('push.on'))}
-      <div class="setting-actions">
-        <button type="button" class="btn ghost small" data-push="test" ${off}>${t('push.test')}</button>
-        <button type="button" class="btn ghost small" data-push="off" ${off}>${t('push.disable')}</button>
-      </div>`,
-  }[status];
+const LOCKED = ['hidden', 'needs-install', 'unsupported', 'denied']; // the switch cannot be used
+
+// The notifications card, a pure function of its inputs so every state can be tested.
+//   status      hidden | needs-install | unsupported | denied | ready | on
+//   configured  server push is set up in this installation (the app has a VAPID key)
+//   nag         the saved "remind me hourly" choice (shown as off while notifications are off:
+//               nothing is sent then; the choice itself is kept and comes back)
+export function renderPushSection({
+  status, busy = false, note = '', nag = true, configured = true,
+}) {
+  const on = status === 'on';
+  const locked = LOCKED.includes(status);
+  const text = note || t({
+    hidden: configured ? 'push.signInFirst' : 'push.notConfigured',
+    'needs-install': 'push.needsInstall',
+    unsupported: 'push.unsupported',
+    denied: 'push.denied',
+    ready: 'push.ready',
+    on: 'push.onNote',
+  }[status]);
+  const nagRow = configured ? `
+    <div class="setting-row">
+      <div class="setting-text">
+        <strong>${t('settings.nag')}</strong>
+        <span class="setting-note">${t('settings.nagNote')}</span>
+      </div>
+      <input type="checkbox" class="switch" role="switch" data-nag aria-label="${esc(t('settings.nag'))}"
+        ${nag && on ? 'checked' : ''} ${on ? '' : 'disabled'}>
+    </div>` : '';
+  const test = on ? `
+    <div class="setting-actions">
+      <button type="button" class="btn ghost small" data-push="test" ${busy ? 'disabled' : ''}>${t('push.test')}</button>
+    </div>` : '';
+  return `
+    <div class="setting-row">
+      <div class="setting-text">
+        <strong>${t('push.title')}</strong>
+        <span class="setting-note" aria-live="polite">${esc(text)}</span>
+      </div>
+      <button type="button" class="switch" role="switch" aria-checked="${on}" aria-label="${esc(t('push.title'))}"
+        data-push="${on ? 'off' : 'on'}" ${locked || busy ? 'disabled' : ''}></button>
+    </div>${nagRow}${test}`;
+}
+
+// The settings section, drawn from this module's current state.
+export function pushSectionHtml(prefs) {
+  return renderPushSection({
+    status, busy, note, nag: prefs.nag, configured: pushConfigured,
+  });
 }
 
 // Work out the current state and, when already subscribed, keep the server's record fresh.

@@ -274,3 +274,53 @@ test('English devices get the repeat in English', async () => {
   await notifier.tick();
   assert.equal(net.pushed[0].body, 'Not taken yet: 1 pill · 08:00');
 });
+
+// ---- why a push failed ----
+
+import { describeFailure } from '../src/notifier.js';
+
+test('describeFailure names the status, the push service and its reason, never the secret address', () => {
+  const err = Object.assign(new Error('Received unexpected response code'), {
+    statusCode: 400,
+    body: '{"reason":\n  "BadJwtToken"}',
+    endpoint: 'https://web.push.apple.com/QOz1/SECRET-DEVICE-TOKEN',
+  });
+  const text = describeFailure(err);
+  assert.match(text, /^HTTP 400 \(web\.push\.apple\.com\): \{"reason": "BadJwtToken"\}/);
+  assert.match(text, /different VAPID key/);
+  assert.doesNotMatch(text, /SECRET-DEVICE-TOKEN/);
+});
+
+test('describeFailure keeps long bodies short, skips the key hint for other codes and copes with odd errors', () => {
+  const long = describeFailure({ statusCode: 413, body: 'x'.repeat(1000), endpoint: 'https://fcm.googleapis.com/fcm/send/abc' });
+  assert.ok(long.length < 260, `too long: ${long.length}`);
+  assert.doesNotMatch(long, /VAPID/);
+  assert.equal(describeFailure({ statusCode: 500 }), 'HTTP 500');
+  assert.equal(describeFailure(Object.assign(new Error('getaddrinfo ENOTFOUND push.example'), { code: 'ENOTFOUND' })), 'getaddrinfo ENOTFOUND push.example');
+  assert.equal(describeFailure(undefined), 'undefined');
+  assert.match(describeFailure({ statusCode: 403, endpoint: 'not a url' }), /^HTTP 403: ?|^HTTP 403 \(/);
+});
+
+test('a rejected push is logged with its reason, and a gone subscription is still removed', async () => {
+  const lines = [];
+  const removed = [];
+  const notifier = createNotifier({
+    send: async (sub) => {
+      if (sub.id === 's-gone') throw Object.assign(new Error('gone'), { statusCode: 410 });
+      throw Object.assign(new Error('rejected'), { statusCode: 400, body: 'VapidPkHashMismatch', endpoint: 'https://fcm.googleapis.com/fcm/send/SECRET' });
+    },
+    removeSub: async (id) => { removed.push(id); },
+    loadSent: () => ({}),
+    saveSent: () => {},
+    now: () => ist('2026-10-07T12:00:00'),
+    log: (line) => lines.push(line),
+  });
+  notifier.setUser('u1', { meds: [] });
+  notifier.setSub('s-bad', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1, testAt: ist('2026-10-07T11:59:50') });
+  notifier.setSub('s-gone', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1, testAt: ist('2026-10-07T11:59:50') });
+  await notifier.tick();
+  const failed = lines.find((l) => l.startsWith('push to s-bad failed'));
+  assert.match(failed, /HTTP 400 \(fcm\.googleapis\.com\): VapidPkHashMismatch/);
+  assert.doesNotMatch(lines.join('\n'), /SECRET/);
+  assert.deepEqual(removed, ['s-gone']);
+});

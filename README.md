@@ -16,7 +16,7 @@
 - Dil: Türkçe ve İngilizce. "Sistem" telefonun diline uyar (Türkçe telefon Türkçe, diğerleri İngilizce). Sunucu bildirimleri de cihazın diliyle gelir
 - Rafa kaldırma: kullanmak istemediğin bir ilaç (ör. yeni paketini almışsın ama şimdi başlamayacaksın) "Rafa kaldır" ile rafa konur. Rafta olan ilaç için hatırlatma, saat başı tekrar, yeni kutu sorusu ve bitiş tarihi olmaz. İlaç listesinden çıkar; Ayarlar → "Rafta olanlar" bölümünde açılır ya da rafdan alınır, listenin altındaki "Rafta N ilaç var" satırı oraya götürür. "Rafdan al" ya da bir doz kaydetmek onu geri getirir. "Daha sonra" ise soruyu yalnızca bugün için erteler
 - Kutunun biteceği gün: takvimde o günün köşesinde bir bayrak görünür, altında her ilacın bitiş tarihi ve kaç gün kaldığı listelenir. Bugünkü doz alındıysa tahmin yarından başlar. Takvim, son bitiş gününün olduğu aya kadar ileri gidebilir
-- Ayarlar sekmesi: tema (sistem / açık / koyu), vurgu rengi, dil, sunucu bildirimlerini açma-kapatma ve test bildirimi, verileri JSON olarak indirme. Tercihler cihazda saklanır
+- Ayarlar sekmesi: tema (sistem / açık / koyu), vurgu rengi, dil, sunucu bildirimlerini açan tek anahtar, saat başı tekrar anahtarı (bildirim açıkken) ve test bildirimi, verileri JSON olarak indirme. Tercihler cihazda saklanır
 - İsteğe bağlı Firebase yedeği: Google ile giriş yapınca veriler Firestore'a yedeklenir, cihazlar arası senkronize olur
 - Veriler cihazda (localStorage) saklanır; çevrimdışı çalışır, ana ekrana eklenebilir
 

@@ -145,7 +145,7 @@ Sunucu günlüğünde `test push to …: sent` satırını görürsün.
 
 | Belirti | Bak |
 | --- | --- |
-| Test hiç gelmiyor | `journalctl -u dozi-notifier -f`. `connected to Firestore` yoksa servis hesabı ya da `.env` yanlış. Test satırı `not delivered` diyorsa cihazın aboneliği bozulmuş: Dozi'de **Kapat**, sonra yeniden **Bildirimleri aç**. |
+| Test hiç gelmiyor | `journalctl -u dozi-notifier -f`. `connected to Firestore` yoksa servis hesabı ya da `.env` yanlış. Test satırı `not delivered` diyorsa üstündeki `push to … failed:` satırı sebebi söyler: `HTTP 400/401/403 (push servisinin adı): …` genelde cihazın başka bir VAPID anahtarıyla abone olduğunu gösterir (Ayarlar'da **Sunucu bildirimleri** anahtarını kapatıp aç; anahtarı değiştirdiysen önce uygulamanın yeni sürümü yayında olmalı). `HTTP 404/410` ölü aboneliktir, sunucu onu kendisi siler. Günlüğe yalnızca push servisinin adı yazılır, cihazın gizli adresi yazılmaz. |
 | Çubukta "ana ekrana ekle" yazıyor | iPhone'da Safari sekmesinden açmışsın; ana ekran simgesinden aç. |
 | "Bildirim izni kapalı" | iPhone: Ayarlar → Bildirimler → Dozi. Android: Ayarlar → Uygulamalar → Chrome/Dozi → Bildirimler. |
 | Saatinde değil, geç geliyor | Telefonun Odak / Rahatsız Etme modu ya da pil tasarrufu bildirimleri erteler. Cihazın saatinin doğru olduğundan emin ol (`timedatectl`). |
