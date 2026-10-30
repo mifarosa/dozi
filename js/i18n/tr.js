@@ -214,6 +214,7 @@ export default {
   'push.denied': 'Bildirim izni kapalı. Telefon ayarlarından Dozi için bildirimi aç.',
   'push.title': 'Sunucu bildirimleri',
   'push.onNote': 'Dozi kapalıyken de hatırlatma geliyor.',
+  'push.stale': 'Bildirimler eski bir anahtarla kurulmuş, bu yüzden gelmiyor. Anahtarı açarak yenile.',
   'push.ready': 'Dozi kapalıyken de hatırlatma al.',
   'push.test': 'Test bildirimi gönder',
   'push.enabled': 'Bildirimler açıldı ✓',

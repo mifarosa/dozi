@@ -2,7 +2,7 @@
 import { state, on, refresh as redrawApp } from './state.js';
 import {
   pushConfigured, pushStatus, readEnvironment, getSubscription, saveSubscription,
-  enablePush, disablePush, sendTest, friendlyPushError,
+  enablePush, disablePush, sendTest, friendlyPushError, subscriptionKeyState,
 } from './push.js';
 import { esc } from './html.js';
 import { savePushHint } from './store.js';
@@ -28,7 +28,7 @@ function setNote(text) {
 const LOCKED = ['hidden', 'needs-install', 'unsupported', 'denied']; // the switch cannot be used
 
 // The notifications card, a pure function of its inputs so every state can be tested.
-//   status      hidden | needs-install | unsupported | denied | ready | on
+//   status      hidden | needs-install | unsupported | denied | stale | ready | on
 //   configured  server push is set up in this installation (the app has a VAPID key)
 //   nag         the saved "remind me hourly" choice (shown as off while notifications are off:
 //               nothing is sent then; the choice itself is kept and comes back)
@@ -43,6 +43,7 @@ export function renderPushSection({
     unsupported: 'push.unsupported',
     denied: 'push.denied',
     ready: 'push.ready',
+    stale: 'push.stale',
     on: 'push.onNote',
   }[status]);
   const nagRow = configured ? `
@@ -80,17 +81,19 @@ export function pushSectionHtml(prefs) {
 async function update() {
   const env = readEnvironment();
   let subscribed = false;
+  let stale = false;
   let sub = null;
   if (env.supported && state.user) {
     try {
       sub = await getSubscription();
       subscribed = Boolean(sub) && env.permission === 'granted';
+      stale = subscribed && subscriptionKeyState(sub) === 'stale';
     } catch {
       subscribed = false;
     }
   }
   status = pushStatus({
-    configured: pushConfigured, signedIn: Boolean(state.user), ...env, subscribed,
+    configured: pushConfigured, signedIn: Boolean(state.user), ...env, subscribed, stale,
   });
   // While push is on, the server sends the reminders; the on-device timer would double them.
   // Before the cloud has answered, nobody looks signed in; that is not an answer, so keep what
@@ -100,7 +103,8 @@ async function update() {
     savePushHint(state.pushActive);
   }
   refresh();
-  if (sub && subscribed) saveSubscription(state.user, sub).catch(() => {});
+  // A stale subscription must not be written back as if it worked; the switch renews it.
+  if (sub && subscribed && !stale) saveSubscription(state.user, sub).catch(() => {});
 }
 
 async function run(action) {
@@ -130,7 +134,9 @@ async function run(action) {
 export async function syncPushRecord() {
   if (!pushConfigured || !state.user) return;
   const sub = await getSubscription().catch(() => null);
-  if (sub && readEnvironment().permission === 'granted') await saveSubscription(state.user, sub).catch(() => {});
+  if (sub && readEnvironment().permission === 'granted' && subscriptionKeyState(sub) !== 'stale') {
+    await saveSubscription(state.user, sub).catch(() => {});
+  }
 }
 
 export function initPushUi() {

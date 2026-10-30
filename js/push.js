@@ -5,6 +5,7 @@ import { vapidPublicKey } from './push-config.js';
 import { t } from './i18n.js';
 import { getLang } from './lang.js';
 import { loadPrefs } from './prefs.js';
+import { loadPushKeyId, savePushKeyId } from './store.js';
 
 export const pushConfigured = Boolean(vapidPublicKey);
 
@@ -35,13 +36,15 @@ export function friendlyPushError(err) {
 }
 
 // What the notification bar should show. Pure, so every case is testable.
-//   hidden | needs-install | unsupported | denied | ready | on
+//   hidden | needs-install | unsupported | denied | stale | ready | on
+// stale: subscribed, but with another server key, so nothing arrives until it is renewed.
 export function pushStatus({
-  configured, signedIn, supported, permission, subscribed, ios, standalone,
+  configured, signedIn, supported, permission, subscribed, stale = false, ios, standalone,
 }) {
   if (!configured || !signedIn) return 'hidden';
   if (!supported) return ios && !standalone ? 'needs-install' : 'unsupported';
   if (permission === 'denied') return 'denied';
+  if (subscribed && stale) return 'stale';
   return subscribed ? 'on' : 'ready';
 }
 
@@ -69,14 +72,27 @@ export async function getSubscription() {
   return reg.pushManager.getSubscription();
 }
 
-// A subscription made for a different server key can never receive our pushes.
-function usesOurKey(sub) {
-  const key = sub.options?.applicationServerKey;
-  if (!key) return true; // cannot tell; keep it
-  const ours = urlBase64ToUint8Array(vapidPublicKey);
-  const theirs = new Uint8Array(key);
-  return ours.length === theirs.length && ours.every((b, i) => b === theirs[i]);
+const currentKeyId = () => vapidPublicKey.slice(0, 12);
+
+// Does a subscription belong to the server key this app carries? A subscription made for another
+// key can never receive our pushes (the push service answers VapidPkHashMismatch).
+//   'ok' | 'stale' | 'unknown'
+// The key the browser reports wins; when it will not say, the key we wrote down at subscribe time
+// decides; a device that did neither (subscribed by an older version) cannot be judged.
+export function keyState({
+  browserKey = null, ourKey = urlBase64ToUint8Array(vapidPublicKey), storedId = null, currentId = currentKeyId(),
+}) {
+  if (browserKey) {
+    const theirs = new Uint8Array(browserKey);
+    return ourKey.length === theirs.length && ourKey.every((b, i) => b === theirs[i]) ? 'ok' : 'stale';
+  }
+  if (storedId) return storedId === currentId ? 'ok' : 'stale';
+  return 'unknown';
 }
+
+export const subscriptionKeyState = (sub) => keyState({
+  browserKey: sub.options?.applicationServerKey, storedId: loadPushKeyId(),
+});
 
 // Tells the server about this device (also refreshes its time zone and restores a lost record).
 export async function saveSubscription(user, sub) {
@@ -101,7 +117,9 @@ export async function enablePush(user) {
   if (permission !== 'granted') return 'denied';
   const reg = await registration();
   let sub = await reg.pushManager.getSubscription();
-  if (sub && !usesOurKey(sub)) {
+  if (sub && subscriptionKeyState(sub) === 'stale') {
+    // Its record on the server could never work with this key; drop it so it is not tried again.
+    await cloud.deletePushSub(await subscriptionDocId(sub.endpoint)).catch(() => {});
     await sub.unsubscribe();
     sub = null;
   }
@@ -110,6 +128,7 @@ export async function enablePush(user) {
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
     });
+    savePushKeyId(currentKeyId());
   }
   await saveSubscription(user, sub);
   return 'on';

@@ -83,6 +83,26 @@ export function savePushHint(on) {
   }
 }
 
+const PUSH_KEY_ID = 'dozi.pushKey';
+
+// Which server key (first characters of the public VAPID key) this device last subscribed with.
+// Browsers do not always let a page read a subscription's key back, so we write it down ourselves.
+export function loadPushKeyId() {
+  try {
+    return localStorage.getItem(PUSH_KEY_ID) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function savePushKeyId(id) {
+  try {
+    localStorage.setItem(PUSH_KEY_ID, id);
+  } catch {
+    // Same as save(): not fatal.
+  }
+}
+
 // Older saved data has no reminder fields, so fill in defaults.
 export const normalizeMed = (m) => ({
   times: [], fired: {}, log: [], boxStart: 0, boxes: [], shelved: false, ...m,
