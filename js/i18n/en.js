@@ -199,6 +199,7 @@ export default {
   'push.denied': 'Notification permission is off. Turn it on for Dozi in your phone\'s settings.',
   'push.title': 'Server notifications',
   'push.onNote': 'Reminders arrive even when Dozi is closed.',
+  'push.stale': 'Notifications were set up with an old key, so none arrive. Turn the switch on to renew them.',
   'push.ready': 'Get reminders even when Dozi is closed.',
   'push.test': 'Send a test notification',
   'push.enabled': 'Notifications turned on ✓',

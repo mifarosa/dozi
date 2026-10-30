@@ -80,3 +80,37 @@ test('friendlyPushError never leaks raw SDK text', () => {
   assert.match(friendlyPushError(new Error('weird internal thing')), /Bir sorun oldu/);
   assert.match(friendlyPushError(undefined), /Bir sorun oldu/);
 });
+
+// ---- is a subscription made for the key this app carries? ----
+
+import { keyState, pushStatus as statusOf } from '../js/push.js';
+import { renderPushSection } from '../js/pushUi.js';
+import { vapidPublicKey } from '../js/push-config.js';
+
+const ours = urlBase64ToUint8Array(vapidPublicKey);
+const other = Uint8Array.from(ours, (b, i) => (i === 10 ? b ^ 1 : b));
+
+test('keyState trusts the key the browser reports, then the one we wrote down, else says unknown', () => {
+  assert.equal(keyState({ browserKey: ours.buffer.slice(0) }), 'ok');
+  assert.equal(keyState({ browserKey: other.buffer.slice(0) }), 'stale');
+  assert.equal(keyState({ browserKey: other.buffer.slice(0), storedId: vapidPublicKey.slice(0, 12) }), 'stale', 'the browser wins');
+  assert.equal(keyState({ storedId: 'AAAAAAAAAAAA', currentId: 'AAAAAAAAAAAA' }), 'ok');
+  assert.equal(keyState({ storedId: 'AAAAAAAAAAAA', currentId: 'BBBBBBBBBBBB' }), 'stale');
+  assert.equal(keyState({}), 'unknown', 'a device subscribed by an older version cannot be judged');
+  assert.equal(keyState({ browserKey: ours.slice(0, 10).buffer }), 'stale', 'a key of the wrong length is stale');
+});
+
+test('a subscribed but stale device shows as off, can be switched on again, and nothing is sent to it', () => {
+  const base = {
+    configured: true, signedIn: true, supported: true, permission: 'granted', subscribed: true,
+  };
+  assert.equal(statusOf({ ...base, stale: true }), 'stale');
+  assert.equal(statusOf({ ...base, stale: false }), 'on');
+  assert.equal(statusOf({ ...base, subscribed: false, stale: true }), 'ready', 'not subscribed: nothing to renew');
+  assert.equal(statusOf({ ...base, permission: 'denied', stale: true }), 'denied');
+
+  const html = renderPushSection({ status: 'stale' });
+  assert.match(html, /role="switch" aria-checked="false"[^>]*data-push="on"(?![^>]*disabled)/, 'off, and the tap turns it on');
+  assert.doesNotMatch(html, /data-push="test"/);
+  assert.match(html, /eski bir anahtarla/);
+});
