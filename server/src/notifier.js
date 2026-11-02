@@ -3,7 +3,8 @@ import './tz.js';
 // on every tick, sends the reminders that are due. Network and storage are injected,
 // so the whole flow can be tested without Firebase or a push service.
 import { dueReminders } from './due.js';
-import { translate, pillsText } from '../../js/i18n.js';
+import { translate } from '../../js/i18n.js';
+import { groupReminders, groupMessage } from '../../js/notifyText.js';
 
 const TEST_FRESH_MS = 2 * 60 * 1000; // a test request older than this is ignored (e.g. after a restart)
 const KEEP_DAYS = 2;
@@ -119,24 +120,19 @@ export function createNotifier({
         const due = dueReminders({
           uid, meds: user.meds, timeZone: newest.tz, nowMs: now(), maxLateMin,
         });
-        for (const r of due) {
-          if (sent[r.key]) continue;
+        // Everything due at the same time goes out as one notification (each medicine keeps its own
+        // "already sent" mark, so a medicine that was sent earlier is simply not part of the group).
+        for (const group of groupReminders(due.filter((r) => !sent[r.key]))) {
           // Hourly repeats only go to devices that have not switched them off.
-          const targets = r.repeat ? list.filter((s) => s.nag !== false) : list;
+          const targets = group.repeat ? list.filter((s) => s.nag !== false) : list;
           if (!targets.length) continue;
-          const accepted = await sendAll(targets, (s) => ({
-            title: translate(s.lang, 'notify.title', { name: r.name }),
-            body: translate(s.lang, r.repeat ? 'notify.again' : 'notify.amount', {
-              amount: pillsText(r.dose, s.lang), time: r.time,
-            }),
-            tag: `dozi-${r.medId}-${r.time}`,
-          }));
+          const accepted = await sendAll(targets, (s) => groupMessage(s.lang, group));
           // Not marked when nobody accepted it, so the next tick tries again (until it is too late).
           if (accepted > 0) {
-            sent[r.key] = true;
+            for (const r of group.items) sent[r.key] = true;
             saveSent(sent);
-            count += 1;
-            log(`sent "${r.name}" ${r.time} to ${accepted} device(s)`);
+            count += group.items.length;
+            log(`sent ${group.items.map((r) => `"${r.name}"`).join(', ')} ${group.time} to ${accepted} device(s)`);
           }
         }
       }

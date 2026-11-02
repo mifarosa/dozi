@@ -162,6 +162,9 @@ export default {
   'notify.title': '{name} zamanı',
   'notify.again': 'Hâlâ alınmadı: {amount} · {time}',
   'notify.amount': '{amount} · {time}',
+  'notify.groupTitle': '{n} ilaç zamanı',
+  'notify.groupAgainTitle': '{n} ilaç hâlâ alınmadı',
+  'notify.more': '+{n} ilaç daha',
   'notify.test': 'Bildirimler çalışıyor ✓',
 
   // confirmations

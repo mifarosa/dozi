@@ -10,6 +10,7 @@ Telefon (Dozi) ──abonelik──▶ Firestore ◀──okur── bu servis �
 - Her 30 saniyede bir, Firestore'daki ilaçlarına ve alış kayıtlarına bakar.
 - Saati gelmiş ve **bugünkü dozu henüz alınmamış** ilaç için bildirim gönderir. Doz saatten önce
   alınmış olsa bile sayılır; uygulamadaki hatırlatma kuralının aynısıdır (`js/reminders.js` ortak kullanılır).
+- Aynı saate denk gelen ilaçlar **tek bildirimde** toplanır (başlıkta ilaç sayısı, her satırda ilaç adı ve miktar; en fazla 6 satır). Saatler farklıysa ayrı bildirim gider. Gruplama ve metin `js/notifyText.js` içinde, uygulama ve sunucu ortak kullanır.
 - Dışarıdan bağlantı **kabul etmez**; yalnızca dışarı bağlanır. Alan adı, HTTPS ya da router ayarı gerekmez.
 - Cihaz kapalıyken ya da servis durmuşken hatırlatma gelmez. Servis tekrar açılınca yalnızca son
   30 dakikadaki hatırlatmaları gönderir, sabahkileri akşam tekrar yağdırmaz.
