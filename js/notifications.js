@@ -1,6 +1,8 @@
 // Browser notification helpers. Reminders only fire while the app is open or kept
 // alive in the background, since Dozi has no server to push from.
-import { t, pillsText } from './i18n.js';
+import { t } from './i18n.js';
+import { getLang } from './lang.js';
+import { groupReminders, groupMessage } from './notifyText.js';
 
 const supported = () => 'Notification' in window;
 const permission = () => (supported() ? Notification.permission : 'unsupported');
@@ -19,13 +21,9 @@ export function askPermission() {
   if (permission() === 'default') Notification.requestPermission().catch(() => {});
 }
 
-export async function notify(m, time) {
-  const title = t('notify.title', { name: m.name });
-  const options = {
-    body: `${pillsText(m.dose)} · ${time}`,
-    icon: 'icons/icon-192.png',
-    tag: `dozi-${m.id}-${time}`,
-  };
+// Shows one notification; a browser without a service worker falls back to a page notification.
+async function show({ title, body, tag }) {
+  const options = { body, icon: 'icons/icon-192.png', tag };
   try {
     const reg = await navigator.serviceWorker?.getRegistration();
     if (reg) {
@@ -36,4 +34,13 @@ export async function notify(m, time) {
     // Fall back to a page notification below.
   }
   new Notification(title, options);
+}
+
+// Medicines due at the same time are announced together in one notification.
+// due: [{ m, time }]
+export function notifyDue(due) {
+  const items = due.map(({ m, time }) => ({
+    medId: m.id, name: m.name, dose: m.dose, time, repeat: 0,
+  }));
+  return Promise.all(groupReminders(items).map((group) => show(groupMessage(getLang(), group))));
 }

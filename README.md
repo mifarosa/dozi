@@ -58,7 +58,7 @@ Derleme yok; `js/` altındaki dosyalar tarayıcıda ES modülü olarak çalış�
 | `js/actions.js` | `#app` içindeki tıklamaları `data-*` özniteliklerine göre yönlendirir |
 | `js/views/` | Ekranlar (liste, ilaç detayı, takvim, blister çizimi); durumu okuyup HTML döndürür, DOM'a dokunmaz |
 | `js/ui/` | Diyaloglar: ilaç formu, "ne içtin" formu, `+` seçim penceresi |
-| `js/reminderLoop.js`, `js/notifications.js` | Hatırlatma zamanlayıcısı ve bildirimler |
+| `js/reminderLoop.js`, `js/notifications.js`, `js/notifyText.js` | Hatırlatma zamanlayıcısı ve bildirimler; `notifyText.js` aynı saatteki ilaçları tek bildirimde toplar (sunucuyla ortak) |
 | `js/cloudSync.js`, `js/cloud.js`, `js/sync.js` | Bulut yedeği: arayüz çubuğu, Firebase sarmalayıcı, birleştirme kararları |
 | `js/push.js`, `js/pushUi.js`, `js/push-config.js` | Sunucu bildirimleri: cihazı abone etme, ayarlardaki bildirim bölümü |
 | `js/lang.js`, `js/i18n.js`, `js/i18n/tr.js`, `js/i18n/en.js`, `js/langUi.js` | Çeviri: seçili dil, `t('anahtar')` ile metinler, `index.html`'deki `data-i18n` öğeleri. Yeni dil eklemek için `js/i18n/` altına bir dosya ve `lang.js`'e bir satır yeter; test iki dilin aynı anahtarlara sahip olduğunu denetler |

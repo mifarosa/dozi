@@ -3,7 +3,7 @@ import { state, refresh } from './state.js';
 import { save, remainingQ } from './store.js';
 import { dayKey } from './dates.js';
 import { unnotifiedTimes, dueMeds } from './reminders.js';
-import { canNotify, notify } from './notifications.js';
+import { canNotify, notifyDue } from './notifications.js';
 
 const CHECK_EVERY_MS = 30000;
 
@@ -11,17 +11,17 @@ let lastDueKey = null;
 const dueKey = () => dueMeds(state.meds).map((m) => m.id).join(',');
 const formDialogOpen = () => Boolean(document.querySelector('#form-dialog[open], #extra-dialog[open]'));
 
+// Everything due right now is collected first, so medicines at the same time share one notification.
 function sendNotifications(now) {
-  let changed = false;
+  const due = [];
   for (const m of state.meds) {
     if (remainingQ(m) === 0) continue;
-    for (const t of unnotifiedTimes(m, now)) {
-      notify(m, t).catch(() => {});
-      m.fired = { ...m.fired, [t]: dayKey(now) };
-      changed = true;
-    }
+    for (const time of unnotifiedTimes(m, now)) due.push({ m, time });
   }
-  if (changed) save(state.meds);
+  if (!due.length) return;
+  notifyDue(due).catch(() => {});
+  for (const { m, time } of due) m.fired = { ...m.fired, [time]: dayKey(now) };
+  save(state.meds);
 }
 
 export function checkReminders() {

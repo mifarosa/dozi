@@ -151,6 +151,9 @@ export default {
   'notify.title': 'Time for {name}',
   'notify.again': 'Not taken yet: {amount} · {time}',
   'notify.amount': '{amount} · {time}',
+  'notify.groupTitle': 'Time for {n} medicines',
+  'notify.groupAgainTitle': '{n} medicines not taken yet',
+  'notify.more': '+{n} more',
   'notify.test': 'Notifications are working ✓',
 
   'confirm.extraDose': 'You already took today\'s dose. Record another one anyway?',

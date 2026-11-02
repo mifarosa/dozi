@@ -324,3 +324,122 @@ test('a rejected push is logged with its reason, and a gone subscription is stil
   assert.doesNotMatch(lines.join('\n'), /SECRET/);
   assert.deepEqual(removed, ['s-gone']);
 });
+
+// ---- one notification for everything due at the same time ----
+
+// Two medicines at 08:00 and one at 20:00, for one person with one device.
+function groupSetup(meds, subExtra = {}) {
+  const net = { pushed: [] };
+  let nowMs = ist('2026-10-07T08:00:20');
+  let store = {};
+  const lines = [];
+  const notifier = createNotifier({
+    send: async (sub, payload) => { net.pushed.push({ to: sub.id, ...payload }); },
+    removeSub: async () => {},
+    loadSent: () => store,
+    saveSent: (o) => { store = { ...o }; },
+    now: () => nowMs,
+    log: (l) => lines.push(l),
+  });
+  notifier.setUser('u1', { meds });
+  notifier.setSub('s1', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1, ...subExtra });
+  return { notifier, net, lines, setNow: (iso) => { nowMs = ist(iso); }, getStore: () => store };
+}
+const named = (id, name, over = {}) => med({ id, name, ...over });
+
+test('medicines at the same time arrive as one notification, with every one marked as sent', async () => {
+  const { notifier, net, lines, getStore } = groupSetup([named('a', 'Vitamin D'), named('b', 'Magnezyum', { dose: 2 })]);
+  assert.equal((await notifier.tick()).sent, 2, 'two reminders were sent');
+  assert.equal(net.pushed.length, 1, 'but in one notification');
+  assert.deepEqual([net.pushed[0].title, net.pushed[0].body, net.pushed[0].tag], ['2 ilaç zamanı', 'Magnezyum · ½ hap\nVitamin D · 1 hap', 'dozi-group-08:00']);
+  assert.equal(Object.keys(getStore()).length, 2);
+  assert.match(lines.join('\n'), /sent "Magnezyum", "Vitamin D" 08:00 to 1 device/);
+  assert.equal((await notifier.tick()).sent, 0, 'not again on the next tick');
+  assert.equal(net.pushed.length, 1);
+});
+
+test('different times stay separate notifications, a lone medicine keeps its own text', async () => {
+  const { notifier, net, setNow } = groupSetup([named('a', 'Vitamin D'), named('b', 'Magnezyum', { times: ['20:00'] })]);
+  await notifier.tick();
+  assert.deepEqual(net.pushed.map((p) => p.title), ['Vitamin D zamanı']);
+  setNow('2026-10-07T20:00:20');
+  await notifier.tick();
+  assert.deepEqual(net.pushed.map((p) => [p.title, p.body]), [
+    ['Vitamin D zamanı', '1 hap · 08:00'],
+    // The 08:00 medicine is still untaken at 20:00, so its hourly repeat is a notification of its own
+    ['Vitamin D zamanı', 'Hâlâ alınmadı: 1 hap · 08:00'],
+    ['Magnezyum zamanı', '1 hap · 20:00'],
+  ]);
+});
+
+test('a medicine already taken today is not part of the group', async () => {
+  const taken = named('b', 'Magnezyum', { log: [{ t: ist('2026-10-07T07:30:00'), q: 4 }] });
+  const { notifier, net } = groupSetup([named('a', 'Vitamin D'), taken]);
+  assert.equal((await notifier.tick()).sent, 1);
+  assert.equal(net.pushed[0].title, 'Vitamin D zamanı');
+});
+
+test('a medicine sent earlier is left out when its neighbour turns up later', async () => {
+  const { notifier, net, getStore } = groupSetup([named('a', 'Vitamin D')]);
+  await notifier.tick();
+  notifier.setUser('u1', { meds: [named('a', 'Vitamin D'), named('b', 'Magnezyum')] });
+  assert.equal((await notifier.tick()).sent, 1);
+  assert.equal(net.pushed.length, 2);
+  assert.equal(net.pushed[1].title, 'Magnezyum zamanı', 'only the one not sent yet');
+  assert.equal(Object.keys(getStore()).length, 2);
+});
+
+test('hourly repeats of several medicines are one notification, only for devices that keep repeats on', async () => {
+  const meds = [named('a', 'Vitamin D'), named('b', 'Magnezyum')];
+  const on = groupSetup(meds);
+  await on.notifier.tick();
+  on.net.pushed.length = 0;
+  on.setNow('2026-10-07T09:00:30');
+  assert.equal((await on.notifier.tick()).sent, 2);
+  assert.equal(on.net.pushed.length, 1);
+  assert.equal(on.net.pushed[0].title, '2 ilaç hâlâ alınmadı');
+
+  const off = groupSetup(meds, { nag: false });
+  await off.notifier.tick();
+  off.net.pushed.length = 0;
+  off.setNow('2026-10-07T09:00:30');
+  assert.equal((await off.notifier.tick()).sent, 0);
+  assert.equal(off.net.pushed.length, 0);
+});
+
+test('each device gets the group in its own language', async () => {
+  const { notifier, net } = groupSetup([named('a', 'Vitamin D'), named('b', 'Magnezyum', { dose: 6 })]);
+  notifier.setSub('s2', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1, lang: 'en' });
+  await notifier.tick();
+  const byDevice = Object.fromEntries(net.pushed.map((p) => [p.to, [p.title, p.body]]));
+  assert.deepEqual(byDevice.s1, ['2 ilaç zamanı', 'Magnezyum · 1½ hap\nVitamin D · 1 hap']);
+  assert.deepEqual(byDevice.s2, ['Time for 2 medicines', 'Magnezyum · 1½ pills\nVitamin D · 1 pill']);
+});
+
+test('people are never mixed into one notification', async () => {
+  const { notifier, net } = groupSetup([named('a', 'Vitamin D')]);
+  notifier.setUser('u2', { meds: [named('a', 'Metformin')] });
+  notifier.setSub('s9', { uid: 'u2', tz: 'Europe/Istanbul', updatedAt: 1 });
+  await notifier.tick();
+  assert.deepEqual(net.pushed.map((p) => [p.to, p.title]).sort(), [['s1', 'Vitamin D zamanı'], ['s9', 'Metformin zamanı']]);
+});
+
+test('if nobody accepts the group, none of it is marked as sent and the next tick tries again', async () => {
+  const net = { calls: 0 };
+  let fail = true;
+  let store = {};
+  const notifier = createNotifier({
+    send: async () => { net.calls += 1; if (fail) throw Object.assign(new Error('boom'), { statusCode: 503 }); },
+    removeSub: async () => {},
+    loadSent: () => store,
+    saveSent: (o) => { store = { ...o }; },
+    now: () => ist('2026-10-07T08:00:20'),
+  });
+  notifier.setUser('u1', { meds: [named('a', 'A'), named('b', 'B')] });
+  notifier.setSub('s1', { uid: 'u1', tz: 'Europe/Istanbul', updatedAt: 1 });
+  assert.equal((await notifier.tick()).sent, 0);
+  assert.deepEqual(store, {});
+  fail = false;
+  assert.equal((await notifier.tick()).sent, 2);
+  assert.equal(net.calls, 2);
+});
