@@ -27,7 +27,7 @@ function scrollOnScreenChange() {
   const screen = `${state.view}:${state.openId || ''}`;
   if (screen !== lastScreen) {
     lastScreen = screen;
-    window.scrollTo(0, 0);
+    document.querySelector('main').scrollTo(0, 0);
   }
 }
 
