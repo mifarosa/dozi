@@ -89,7 +89,13 @@ body {
   background: var(--bg);
   color: var(--text);
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  padding-bottom: env(safe-area-inset-bottom);
+  /* The page itself never scrolls: the header and tab bar are fixed rows of this column and only
+     <main> scrolls. A position:fixed tab bar drifted to the middle of the screen on iPhones. */
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .topbar {
@@ -97,11 +103,11 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
-  position: sticky;
-  top: 0;
+  flex: none;
   background: var(--bg);
   z-index: 5;
 }
+.cloud-bar { flex: none; }
 .topbar h1 { margin: 0; font-size: 1.5rem; letter-spacing: 0.5px; }
 .topbar h1 span { color: var(--brand); }
 .icon-btn {
@@ -117,7 +123,15 @@ body {
 .icon-btn[hidden] { display: none; }
 #back { background: transparent; color: var(--text); border: 1px solid var(--line); }
 
-main { padding: 4px 16px calc(88px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
+main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  /* Side padding keeps the content in a 528px column while the scrollbar stays at the screen edge. */
+  padding: 4px max(16px, calc((100% - 528px) / 2)) 24px;
+}
 
 .card {
   background: var(--card);
@@ -364,10 +378,7 @@ legend { color: var(--brand); font-weight: 600; padding: 0 6px; }
 /* ---------- Tab bar ---------- */
 
 .tabbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex: none;
   z-index: 6;
   display: flex;
   background: var(--card);
