@@ -158,3 +158,17 @@ test('a medicine on the shelf is never reminded, not even by hourly repeats', ()
   assert.equal(due([med({ shelved: false })], '2026-10-07T08:05:00').length, 1);
   assert.equal(due([shelved, med({ id: 'm2', name: 'B' })], '2026-10-07T08:05:00').length, 1);
 });
+
+test('taken on each of the last two days: one question on the third, at the earlier first intake', () => {
+  const log = [{ t: ist('2026-10-05T09:30:00'), q: 4 }, { t: ist('2026-10-06T08:10:00'), q: 4 }];
+  const m = med({ times: [], log });
+  assert.deepEqual(due([m], '2026-10-07T08:09:00'), []);
+  const [a] = due([m], '2026-10-07T08:11:00');
+  assert.equal(a.kind, 'ask');
+  assert.equal(a.time, '08:10');
+  assert.equal(a.key, 'u1|m1|ask|2026-10-07');
+  assert.deepEqual(due([m], '2026-10-07T20:00:00', { maxLateMin: 360 }), [], 'not sent hours late');
+  assert.deepEqual(due([{ ...m, learnNo: '2026-10-07' }], '2026-10-07T08:11:00'), [], 'answered "not today"');
+  assert.deepEqual(due([{ ...m, log: [...log, { t: ist('2026-10-07T07:00:00'), q: 4 }] }], '2026-10-07T08:11:00'), [], 'taken today');
+  assert.deepEqual(due([{ ...m, log: [log[1]] }], '2026-10-07T08:11:00'), [], 'only one of the two days');
+});

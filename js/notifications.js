@@ -37,10 +37,11 @@ async function show({ title, body, tag }) {
 }
 
 // Medicines due at the same time are announced together in one notification.
-// due: [{ m, time }]
-export function notifyDue(due) {
-  const items = due.map(({ m, time }) => ({
-    medId: m.id, name: m.name, dose: m.dose, time, repeat: 0,
-  }));
+// due: [{ m, time }]; asks: [{ m, time }] are the "taken two days in a row, today too?" questions.
+export function notifyDue(due, asks = []) {
+  const items = [
+    ...due.map(({ m, time }) => ({ medId: m.id, name: m.name, dose: m.dose, time, repeat: 0 })),
+    ...asks.map(({ m, time }) => ({ medId: m.id, name: m.name, dose: m.dose, time, repeat: 0, kind: 'ask' })),
+  ];
   return Promise.all(groupReminders(items).map((group) => show(groupMessage(getLang(), group))));
 }
