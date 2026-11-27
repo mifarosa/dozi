@@ -4,6 +4,7 @@ import { state } from '../state.js';
 import { totalQ, remainingQ, daysLeft } from '../store.js';
 import { t, pillsText } from '../i18n.js';
 import { dueMeds } from '../reminders.js';
+import { learnedAsk } from '../learned.js';
 import { esc } from '../html.js';
 import { newBoxPrompt, endedLabel } from '../boxes.js';
 
@@ -35,6 +36,22 @@ function newBoxCardsHtml() {
   }).join('');
 }
 
+// "You took it the last two days. Taking it today too?" with the three possible answers.
+function askCardsHtml() {
+  return state.meds.map((m) => {
+    const ask = learnedAsk(m);
+    if (!ask) return '';
+    return `<div class="card newbox">
+      <p>${t('ask.text', { name: `<b>${esc(m.name)}</b>` })}</p>
+      <div class="row">
+        <button class="btn primary small" data-ask-take="${esc(m.id)}">${t('ask.take')}</button>
+        <button class="btn ghost small" data-ask-no="${esc(m.id)}">${t('ask.no')}</button>
+        <button class="btn ghost small" data-ask-sched="${esc(m.id)}">${t('ask.sched', { time: ask.time })}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function medCardHtml(m) {
   const pct = Math.round((remainingQ(m) / totalQ(m)) * 100);
   return `<button class="card med" data-open="${esc(m.id)}">
@@ -53,6 +70,6 @@ function shelfLinkHtml(count) {
 export function listHtml() {
   const inUse = state.meds.filter((m) => !m.shelved);
   const empty = state.meds.length ? '' : emptyHtml();
-  return newBoxCardsHtml() + dueBannerHtml() + empty + inUse.map(medCardHtml).join('')
+  return newBoxCardsHtml() + askCardsHtml() + dueBannerHtml() + empty + inUse.map(medCardHtml).join('')
     + shelfLinkHtml(state.meds.length - inUse.length);
 }

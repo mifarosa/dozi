@@ -4,23 +4,32 @@ import { save, remainingQ } from './store.js';
 import { dayKey } from './dates.js';
 import { unnotifiedTimes, dueMeds } from './reminders.js';
 import { canNotify, notifyDue } from './notifications.js';
+import { learnedAsk } from './learned.js';
 
 const CHECK_EVERY_MS = 30000;
 
 let lastDueKey = null;
-const dueKey = () => dueMeds(state.meds).map((m) => m.id).join(',');
+// The banner and the question cards both depend on the clock, so both are part of the redraw key.
+const dueKey = () => `${dueMeds(state.meds).map((m) => m.id).join(',')}|${state.meds.filter((m) => learnedAsk(m)).map((m) => m.id).join(',')}`;
 const formDialogOpen = () => Boolean(document.querySelector('#form-dialog[open], #extra-dialog[open]'));
 
 // Everything due right now is collected first, so medicines at the same time share one notification.
+// A question about a medicine is announced once per day (m.askedOn).
 function sendNotifications(now) {
   const due = [];
+  const asks = [];
   for (const m of state.meds) {
     if (remainingQ(m) === 0) continue;
     for (const time of unnotifiedTimes(m, now)) due.push({ m, time });
   }
-  if (!due.length) return;
-  notifyDue(due).catch(() => {});
+  for (const m of state.meds) {
+    const ask = learnedAsk(m, now);
+    if (ask && m.askedOn !== dayKey(now)) asks.push({ m, time: ask.time });
+  }
+  if (!due.length && !asks.length) return;
+  notifyDue(due, asks).catch(() => {});
   for (const { m, time } of due) m.fired = { ...m.fired, [time]: dayKey(now) };
+  for (const { m } of asks) m.askedOn = dayKey(now);
   save(state.meds);
 }
 

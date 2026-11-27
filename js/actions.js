@@ -5,7 +5,8 @@ import {
 import { resolveWeek, shiftWeek, monthOfWeek, storedWeek } from './week.js';
 import { startOfWeek } from './dates.js';
 import { remainingQ } from './store.js';
-import { resolveTakeTime, dayComplete } from './reminders.js';
+import { resolveTakeTime, dayComplete, parseTimes } from './reminders.js';
+import { learnedAsk } from './learned.js';
 import { openMedForm } from './ui/medForm.js';
 import { openBackfill } from './ui/backfillForm.js';
 import { openNewBox } from './ui/newBoxForm.js';
@@ -99,6 +100,27 @@ function askLater(id) {
   commit();
 }
 
+// The "taken two days in a row" question (see js/learned.js).
+// Took it: log one dose now. Not today: stay quiet for the rest of today (tomorrow's streak is broken
+// anyway). Every day: make the time a real reminder, marked as announced so it does not fire at once.
+function answerAsk(kind, id) {
+  const m = findMed(id);
+  if (!m) return;
+  const now = new Date();
+  if (kind === 'take') {
+    m.log.push({ t: now.getTime(), q: Math.min(m.dose, remainingQ(m)) });
+  } else if (kind === 'no') {
+    m.learnNo = dayKey(now);
+  } else {
+    const ask = learnedAsk(m, now);
+    if (ask) {
+      m.times = parseTimes([...(m.times || []), ask.time]);
+      m.fired = { ...m.fired, [ask.time]: dayKey(now) };
+    }
+  }
+  commit();
+}
+
 // Checked in this order; the first data-* attribute found on the button wins.
 // `m` is the medicine on screen, only needed by the detail screen's buttons.
 const HANDLERS = [
@@ -109,6 +131,9 @@ const HANDLERS = [
   ['removeMed', (btn) => removeIntake(btn.dataset.removeMed, Number(btn.dataset.t))],
   ['backfill', (btn) => openBackfill({ medId: btn.dataset.backfill })],
   ['backfillDay', (btn) => openBackfill({ date: btn.dataset.backfillDay })],
+  ['askTake', (btn) => answerAsk('take', btn.dataset.askTake)],
+  ['askNo', (btn) => answerAsk('no', btn.dataset.askNo)],
+  ['askSched', (btn) => answerAsk('sched', btn.dataset.askSched)],
   ['newbox', (btn) => openNewBox(btn.dataset.newbox)],
   ['newboxLater', (btn) => askLater(btn.dataset.newboxLater)],
   ['shelve', (btn) => setShelved(btn.dataset.shelve, true)],

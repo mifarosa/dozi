@@ -3,6 +3,7 @@ import './tz.js';
 // It reuses the app's own functions so "already took it today" means exactly the same
 // thing here as on the phone.
 import { pendingTimes } from '../../js/reminders.js';
+import { learnedAsk } from '../../js/learned.js';
 import { remainingQ, normalizeMed } from '../../js/store.js';
 import { pillsText, translate } from '../../js/i18n.js';
 import { toWall, isValidTimeZone } from './wall.js';
@@ -85,6 +86,17 @@ export function dueReminders({
         body: `${translate('tr', repeat ? 'notify.again' : 'notify.amount', { amount: pillsText(m.dose, 'tr'), time })}`,
       });
     }
+  }
+
+  // "Taken on each of the last two days" (see js/learned.js): one question per medicine and day.
+  for (const raw of meds || []) {
+    if (!raw || raw.shelved) continue;
+    const m = inWall(raw, zone);
+    const ask = learnedAsk(m, wallNow);
+    if (!ask || nowMin - minutes(ask.time) > maxLateMin) continue;
+    out.push({
+      key: `${uid}|${m.id}|ask|${day}`, medId: m.id, name: m.name, time: ask.time, repeat: 0, kind: 'ask', dose: m.dose, body: '',
+    });
   }
   return out;
 }

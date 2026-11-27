@@ -443,3 +443,24 @@ test('if nobody accepts the group, none of it is marked as sent and the next tic
   assert.equal((await notifier.tick()).sent, 2);
   assert.equal(net.calls, 2);
 });
+
+test('the "taken two days in a row" question is a notification of its own, once a day', async () => {
+  const log = [{ t: ist('2026-10-05T07:30:00'), q: 4 }, { t: ist('2026-10-06T07:40:00'), q: 4 }];
+  const { notifier, net, setNow } = groupSetup([named('a', 'Vitamin D', { times: [], log }), named('b', 'Magnezyum', { times: [], log })]);
+  setNow('2026-10-07T08:00:20'); // before 08:00 nothing is asked; the clamp makes the ask time 08:00
+  assert.equal((await notifier.tick()).sent, 2);
+  assert.equal(net.pushed.length, 1);
+  assert.equal(net.pushed[0].title, '2 ilaç için sorumuz var');
+  assert.equal(net.pushed[0].tag, 'dozi-ask-08:00');
+  assert.equal((await notifier.tick()).sent, 0, 'not again');
+});
+
+test('a single question names the medicine and points to the app', async () => {
+  const log = [{ t: ist('2026-10-05T09:00:00'), q: 4 }, { t: ist('2026-10-06T09:00:00'), q: 4 }];
+  const { notifier, net, setNow } = groupSetup([named('a', 'Vitamin D', { times: [], log })]);
+  setNow('2026-10-07T09:00:20');
+  await notifier.tick();
+  assert.equal(net.pushed[0].title, 'Vitamin D: bugün de alacak mısın?');
+  assert.match(net.pushed[0].body, /Dozi/);
+  assert.equal(net.pushed[0].tag, 'dozi-ask-a');
+});
